@@ -25,6 +25,27 @@ const provider = new ethers.JsonRpcProvider(
 // Initialize DeFi service
 const defiService = new DeFiService(provider);
 
+// Root route - API documentation
+app.get('/', (req, res) => {
+  res.json({
+    name: 'APY Hub API',
+    version: '1.0.0',
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/api/health',
+      apy: {
+        all: '/api/apy/all',
+        byProtocol: '/api/apy/protocol/:protocol (compound, aave-v3, euler)',
+        byToken: '/api/apy/token/:token (USDC, ETH, WETH, DAI)',
+        compare: '/api/apy/compare/:token',
+        historical: '/api/apy/historical/:protocol/:token?days=7'
+      }
+    },
+    documentation: 'Visit the endpoints above to get DeFi APY data'
+  });
+});
+
 // Routes
 app.use('/api/apy', apyRoutes(defiService));
 
