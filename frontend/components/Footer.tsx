@@ -2,6 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { FaGithub, FaDiscord, FaTwitter, FaTelegram, FaMedium } from 'react-icons/fa'
+import Image from 'next/image'
+import Link from 'next/link'
 
 const Footer = () => {
   const footerLinks = {
@@ -32,11 +34,8 @@ const Footer = () => {
   }
 
   const socialLinks = [
-    { icon: <FaGithub />, href: '#', label: 'GitHub' },
-    { icon: <FaDiscord />, href: '#', label: 'Discord' },
-    { icon: <FaTwitter />, href: '#', label: 'Twitter' },
-    { icon: <FaTelegram />, href: '#', label: 'Telegram' },
-    { icon: <FaMedium />, href: '#', label: 'Medium' },
+    { icon: <FaGithub />, href: 'https://github.com/apyhubxyz', label: 'GitHub' },
+    { icon: <FaTelegram />, href: 'https://t.me/apyhubxyz', label: 'Telegram' },
   ]
 
   return (
@@ -52,12 +51,12 @@ const Footer = () => {
               viewport={{ once: true }}
               className="mb-6"
             >
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-brown-500 to-purple-500 rounded-xl flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
+              <Link href="/" className="flex items-center space-x-2 mb-4 cursor-pointer w-fit">
+                <div className="bg-gradient-to-br from-brown-500 to-purple-500 p-1 rounded-xl shadow-sm">
+                  <Image src="/logo.png" alt="Apyhub Logo" width={33} height={33} className="rounded-lg" />
                 </div>
                 <span className="text-xl font-bold gradient-text">Apyhub</span>
-              </div>
+              </Link>
               <p className="text-brown-600 dark:text-brown-300 leading-relaxed">
                 Your gateway to maximizing DeFi yields. Discover, compare, and optimize 
                 your investments across multiple protocols.

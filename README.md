@@ -1,6 +1,14 @@
-# Apyhub Frontend
+# Apyhub - DeFi Yield Aggregator
 
-A modern DeFi yield aggregator platform built with Next.js 14, TypeScript, and Tailwind CSS.
+A modern DeFi yield aggregator platform that helps users discover the best yield opportunities across multiple DeFi protocols.
+
+## Monorepo Structure
+
+This is a full-stack monorepo containing:
+- **Frontend:** Next.js 14 application
+- **Backend:** Express.js API with Prisma ORM
+- **Database:** PostgreSQL
+- **Infrastructure:** Docker Compose setup
 
 ## Overview
 
@@ -89,22 +97,144 @@ The frontend is designed to connect with the Apyhub backend API. Currently using
 - `GET /api/stats` - Platform statistics
 - `POST /api/subscribe` - Newsletter subscription
 
-## Deployment
+## Getting Started
 
-### Production Build
+### Prerequisites
 
+- Node.js 18+
+- PostgreSQL 16+ (or use Docker)
+- npm or yarn
+
+### Environment Setup
+
+**This project uses a centralized `.env` file in the root directory.** All environment variables for frontend, backend, and database are configured in one place.
+
+1. Copy the example environment file:
 ```bash
-npm run build
-npm start
+cp .env.example .env
 ```
 
-### Environment Variables
-
-Create a `.env.local` file:
-
+2. Edit `.env` and configure your values:
 ```env
-NEXT_PUBLIC_API_URL=https://api.apyhub.xyz
-NEXT_PUBLIC_WS_URL=wss://ws.apyhub.xyz
+# Database
+POSTGRES_PASSWORD=your_secure_password
+
+# Blockchain RPC (get from Alchemy/Infura)
+RPC_URL=https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY
+
+# WalletConnect (get from cloud.walletconnect.com)
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_project_id
+
+# OpenAI (optional, for AI chat)
+OPENAI_API_KEY=sk-your_key
+```
+
+### Local Development
+
+#### Option 1: Without Docker
+
+1. Install dependencies:
+```bash
+# Backend
+cd backend
+npm install
+npm run db:generate
+npm run db:push
+
+# Frontend
+cd ../frontend
+npm install
+```
+
+2. Start development servers:
+```bash
+# Backend (from backend directory)
+npm run dev
+
+# Frontend (from frontend directory)
+npm run dev
+```
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+
+#### Option 2: With Docker
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- Database: localhost:5432
+
+### Production Deployment
+
+```bash
+# Build with Docker
+docker-compose --profile production up -d
+
+# Or build manually
+cd backend && npm run build
+cd ../frontend && npm run build
+```
+
+## Environment Variables Reference
+
+All variables are now centralized in the root [`.env`](.env.example:1) file:
+
+**Database:**
+- `POSTGRES_DB` - Database name
+- `POSTGRES_USER` - Database user
+- `POSTGRES_PASSWORD` - Database password
+- `POSTGRES_PORT` - Database port
+- `DATABASE_URL` - Prisma connection string
+
+**Backend:**
+- `NODE_ENV` - Environment (development/production)
+- `BACKEND_PORT` - Backend API port
+- `RPC_URL` - Blockchain RPC endpoint
+- `CORS_ORIGIN` - Allowed origins
+- `OPENAI_API_KEY` - OpenAI API key (optional)
+- `CACHE_TTL` - Cache time-to-live
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window
+- `LOG_LEVEL` - Logging level
+
+**Frontend:**
+- `FRONTEND_PORT` - Frontend port
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+- `NEXT_PUBLIC_WS_URL` - WebSocket URL
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` - WalletConnect project ID
+
+## Project Structure
+
+```
+apyhubxyz/
+├── .env.example              # Centralized environment config
+├── docker-compose.yml        # Docker services
+├── backend/
+│   ├── src/
+│   │   ├── index.ts         # Express server
+│   │   ├── routes/          # API routes
+│   │   └── services/        # Business logic
+│   ├── prisma/
+│   │   └── schema.prisma    # Database schema
+│   └── package.json
+├── frontend/
+│   ├── app/                 # Next.js app directory
+│   ├── components/          # React components
+│   ├── hooks/               # Custom hooks
+│   └── package.json
+└── nginx/
+    └── nginx.conf           # Reverse proxy config
 ```
 
 ## Browser Support

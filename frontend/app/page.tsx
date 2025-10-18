@@ -23,19 +23,11 @@ export default function Home() {
   return (
     <main className="relative">
       <Header />
-      
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Hero />
-        <Features />
-        <APYShowcase />
-        <Benefits />
-        <CTA />
-      </motion.div>
-      
+      <Hero />
+      <Features />
+      <APYShowcase />
+      <Benefits />
+      <CTA />
       <Footer />
     </main>
   )

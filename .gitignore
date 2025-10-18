@@ -14,9 +14,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Env files
+# Env files (but keep .env.example)
 .env
-**/.env*
+.env.local
+.env*.local
+**/.env
+**/.env.local
+**/.env*.local
+!.env.example
+!**/.env.example
 
 # TypeScript
 *.tsbuildinfo
@@ -42,3 +48,23 @@ coverage/
 
 # Local dev
 .tmp/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+nginx/ssl/*
+!nginx/ssl/.gitkeep
+
+# Sensitive files
+secrets/
+*.secret
+credentials.json

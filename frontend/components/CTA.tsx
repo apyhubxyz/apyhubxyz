@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { BsArrowRight } from 'react-icons/bs'
-import { FaDiscord, FaTwitter, FaTelegram } from 'react-icons/fa'
+import { FaTelegram } from 'react-icons/fa'
+import Link from 'next/link'
 
 const CTA = () => {
   return (
@@ -74,22 +75,16 @@ const CTA = () => {
               viewport={{ once: true }}
               className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-white text-brown-800 px-8 py-4 rounded-full font-semibold text-lg flex items-center justify-center space-x-2 shadow-2xl hover:shadow-3xl transition-all"
-              >
-                <span>Launch App</span>
-                <BsArrowRight className="text-xl" />
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-white/10 backdrop-blur-sm text-white border-2 border-white/30 px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/20 transition-all"
-              >
-                Read Documentation
-              </motion.button>
+              <Link href="/pools">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-white text-brown-800 px-8 py-4 rounded-full font-semibold text-lg flex items-center justify-center space-x-2 shadow-2xl hover:shadow-3xl transition-all"
+                >
+                  <span>Pools</span>
+                  <BsArrowRight className="text-xl" />
+                </motion.button>
+              </Link>
             </motion.div>
 
             {/* Social links */}
@@ -103,19 +98,7 @@ const CTA = () => {
               <span className="text-brown-200 mr-4">Join our community:</span>
               <div className="flex space-x-4">
                 <a
-                  href="#"
-                  className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
-                >
-                  <FaDiscord />
-                </a>
-                <a
-                  href="#"
-                  className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
-                >
-                  <FaTwitter />
-                </a>
-                <a
-                  href="#"
+                  href="https://t.me/apyhubxyz"
                   className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
                 >
                   <FaTelegram />
