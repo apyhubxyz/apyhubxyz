@@ -258,7 +258,8 @@ This project is licensed under the MIT License.
 
 ## Contact
 
-- Website(Soon): [apyhub.xyz](https://apyhub.xyz)
+- Website: [apyhub.xyz](https://apyhub.xyz)
+- Telegram: https://t.me/apyhubxyz
 
 ---
 
