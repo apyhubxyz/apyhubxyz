@@ -155,8 +155,8 @@ npm run dev
 npm run dev
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
+- Frontend: http://localhost:3002
+- Backend API: http://localhost:3003
 
 #### Option 2: With Docker
 
@@ -171,9 +171,9 @@ docker-compose logs -f
 docker-compose down
 ```
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- Database: localhost:5432
+- Frontend: http://localhost:3002
+- Backend API: http://localhost:3003
+- Database: localhost:5433
 
 ### Production Deployment
 
