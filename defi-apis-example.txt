@@ -1,0 +1,61 @@
+# DeFi Protocol API Configuration
+# Copy these environment variables to your .env file
+
+# The Graph Protocol APIs (for Aave, Euler, Morpho)
+# Get your API key from: https://thegraph.com/studio/
+THEGRAPH_API_KEY=your_graph_api_key_here
+
+# Aave
+AAVE_SUBGRAPH_URL=https://api.thegraph.com/subgraphs/name/aave/protocol-v3
+AAVE_API_KEY=
+
+# Compound Finance
+# Documentation: https://compound.finance/docs
+COMPOUND_API_URL=https://api.compound.finance/api/v2
+COMPOUND_API_KEY=
+
+# Yearn Finance
+# Documentation: https://docs.yearn.fi/
+YEARN_API_URL=https://api.yearn.fi/v1
+YEARN_API_KEY=
+
+# Curve Finance
+# Documentation: https://curve.readthedocs.io/
+CURVE_API_URL=https://api.curve.fi/api
+CURVE_API_KEY=
+
+# Pendle Finance
+# Get API access: https://docs.pendle.finance/
+PENDLE_API_URL=https://api-v2.pendle.finance/core/v1
+PENDLE_API_KEY=
+
+# Beefy Finance (Usually no API key required)
+BEEFY_VAULTS_URL=https://api.beefy.finance/vaults
+BEEFY_APY_URL=https://api.beefy.finance/apy
+BEEFY_API_KEY=
+
+# Silo Finance
+SILO_API_URL=https://api.silo.finance/v1/markets
+SILO_API_KEY=
+
+# Euler Finance
+EULER_SUBGRAPH_URL=https://api.thegraph.com/subgraphs/name/euler-xyz/euler-mainnet
+EULER_API_KEY=
+
+# Morpho
+MORPHO_SUBGRAPH_URL=https://api.thegraph.com/subgraphs/name/morpho-labs/morpho-v1
+MORPHO_API_KEY=
+
+# Fluid Protocol
+FLUID_API_URL=https://api.fluid.io/v1/pools
+FLUID_API_KEY=
+
+# Rate Limiting
+API_RATE_LIMIT=60
+API_CONCURRENT_REQUESTS=3
+API_TIMEOUT=10000
+
+# Alchemy/Infura for blockchain data
+ALCHEMY_API_KEY=your_alchemy_key
+INFURA_API_KEY=your_infura_key
+RPC_URL=https://eth-mainnet.g.alchemy.com/v2/your_alchemy_key
