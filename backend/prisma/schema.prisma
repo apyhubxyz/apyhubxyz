@@ -1,0 +1,180 @@
+// Apyhub Database Schema
+// DeFi APY Aggregator Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Protocol Model - DeFi Protocols (Aave, Compound, etc.)
+model Protocol {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  website     String?
+  logo        String?
+  chain       String   // ethereum, polygon, bsc
+  audited     Boolean  @default(false)
+  auditedBy   String?
+  tvl         Decimal  @default(0) @db.Decimal(20, 2)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pools       Pool[]
+
+  @@index([chain])
+  @@index([active])
+}
+
+// Liquidity Pool Model
+model Pool {
+  id              String   @id @default(uuid())
+  protocolId      String
+  protocol        Protocol @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+
+  name            String
+  asset           String   // USDC, ETH, DAI, etc.
+  assetAddress    String?  // Contract address
+  poolAddress     String   @unique
+
+  // Pool Type
+  poolType        String   // single, double (LP), lending, staking
+  isLoopable      Boolean  @default(false) // Can use leverage/looping
+
+  // APY Data
+  supplyAPY       Decimal  @db.Decimal(10, 4)
+  borrowAPY       Decimal? @db.Decimal(10, 4)
+  rewardAPY       Decimal? @db.Decimal(10, 4)
+  totalAPY        Decimal  @db.Decimal(10, 4) // Combined APY
+
+  // TVL & Liquidity
+  tvl             Decimal  @default(0) @db.Decimal(20, 2)
+  availableLiquidity Decimal? @db.Decimal(20, 2)
+  utilizationRate Decimal? @db.Decimal(5, 2)
+
+  // Risk Assessment
+  riskLevel       String   @default("medium") // low, medium, high
+  riskScore       Int?     @default(50) // 0-100
+
+  // Additional Info
+  minDeposit      Decimal? @db.Decimal(20, 2)
+  lockPeriod      Int?     // in days, 0 for no lock
+
+  active          Boolean  @default(true)
+  verified        Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastFetched     DateTime @default(now())
+
+  historicalData  HistoricalAPY[]
+  userPositions   UserPosition[]
+
+  @@index([protocolId])
+  @@index([asset])
+  @@index([poolType])
+  @@index([isLoopable])
+  @@index([totalAPY])
+  @@index([riskLevel])
+  @@index([active])
+}
+
+// Historical APY Data
+model HistoricalAPY {
+  id              String   @id @default(uuid())
+  poolId          String
+  pool            Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  supplyAPY       Decimal  @db.Decimal(10, 4)
+  borrowAPY       Decimal? @db.Decimal(10, 4)
+  totalAPY        Decimal  @db.Decimal(10, 4)
+  tvl             Decimal  @db.Decimal(20, 2)
+
+  timestamp       DateTime @default(now())
+
+  @@index([poolId])
+  @@index([timestamp])
+}
+
+// User Model (for wallet addresses)
+model User {
+  id              String   @id @default(uuid())
+  walletAddress   String   @unique
+  ens             String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastSeen        DateTime @default(now())
+
+  positions       UserPosition[]
+  watchlist       Watchlist[]
+
+  @@index([walletAddress])
+}
+
+// User Positions (tracked from blockchain)
+model UserPosition {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  poolId          String
+  pool            Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  amount          Decimal  @db.Decimal(30, 8)
+  amountUSD       Decimal? @db.Decimal(20, 2)
+
+  entryAPY        Decimal  @db.Decimal(10, 4)
+  currentAPY      Decimal  @db.Decimal(10, 4)
+
+  earnings        Decimal  @default(0) @db.Decimal(20, 8)
+  earningsUSD     Decimal? @default(0) @db.Decimal(20, 2)
+
+  startDate       DateTime @default(now())
+  lastUpdated     DateTime @updatedAt
+
+  active          Boolean  @default(true)
+
+  @@unique([userId, poolId])
+  @@index([userId])
+  @@index([poolId])
+  @@index([active])
+}
+
+// Watchlist - User favorite pools
+model Watchlist {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  poolId          String
+
+  notes           String?
+
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, poolId])
+  @@index([userId])
+}
+
+// AI Chat History (Optional - for storing chat context)
+model ChatHistory {
+  id              String   @id @default(uuid())
+  sessionId       String
+  userAddress     String?
+
+  role            String   // user, assistant, system
+  content         String   @db.Text
+
+  createdAt       DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userAddress])
+  @@index([createdAt])
+}

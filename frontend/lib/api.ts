@@ -1,0 +1,242 @@
+// frontend/lib/api.ts
+import axios, { AxiosInstance, AxiosError } from 'axios';
+
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+// Create axios instance
+const api: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add timestamp to prevent caching
+    config.params = {
+      ...config.params,
+      _t: Date.now(),
+    };
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => response.data,
+  (error: AxiosError<{ error?: string }>) => {
+    // Handle errors
+    const message = error.response?.data?.error || error.message || 'An error occurred';
+    console.error('API Error:', message);
+    return Promise.reject(new Error(message));
+  }
+);
+
+// Types
+export interface Pool {
+  id: string;
+  name: string;
+  asset: string;
+  assetAddress?: string;
+  poolAddress: string;
+  poolType: string;
+  isLoopable: boolean;
+  supplyAPY: number;
+  borrowAPY?: number;
+  rewardAPY?: number;
+  totalAPY: number;
+  tvl: number;
+  availableLiquidity?: number;
+  utilizationRate?: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  riskScore?: number;
+  minDeposit?: number;
+  lockPeriod?: number;
+  active: boolean;
+  verified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  protocol?: {
+    id: string;
+    name: string;
+    slug: string;
+    logo?: string;
+    chain: string;
+    audited: boolean;
+    website?: string;
+  };
+  historicalData?: HistoricalAPY[];
+}
+
+export interface HistoricalAPY {
+  id: string;
+  supplyAPY: number;
+  borrowAPY?: number;
+  totalAPY: number;
+  tvl: number;
+  timestamp: string;
+}
+
+export interface Protocol {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  website?: string;
+  logo?: string;
+  chain: string;
+  audited: boolean;
+  auditedBy?: string;
+  tvl: number;
+  active: boolean;
+  pools?: Pool[];
+}
+
+export interface UserPosition {
+  id: string;
+  pool: {
+    id: string;
+    name: string;
+    asset: string;
+    poolAddress: string;
+    protocol: {
+      name: string;
+      logo?: string;
+      chain: string;
+    };
+  };
+  amount: string;
+  amountUSD: number;
+  entryAPY: number;
+  currentAPY: number;
+  earnings: string;
+  earningsUSD: number;
+  startDate: string;
+  lastUpdated: string;
+}
+
+export interface Portfolio {
+  user: {
+    walletAddress: string;
+    ens?: string;
+  };
+  portfolio: {
+    totalValue: number;
+    totalEarnings: number;
+    weightedAPY: number;
+    positionCount: number;
+  };
+  positions: UserPosition[];
+}
+
+export interface PoolFilters {
+  asset?: string;
+  poolType?: 'single' | 'double' | 'lending' | 'staking';
+  isLoopable?: boolean;
+  protocolId?: string;
+  chain?: string;
+  minAPY?: number;
+  maxAPY?: number;
+  riskLevel?: 'low' | 'medium' | 'high';
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+// API Client
+export const apiClient = {
+  // Protocols
+  protocols: {
+    list: async (params?: { chain?: string; active?: boolean }): Promise<Protocol[]> => {
+      return api.get('/protocols', { params }) as Promise<Protocol[]>;
+    },
+    getBySlug: async (slug: string): Promise<Protocol> => {
+      return api.get(`/protocols/${slug}`) as Promise<Protocol>;
+    },
+    getPools: async (slug: string): Promise<Pool[]> => {
+      return api.get(`/protocols/${slug}/pools`) as Promise<Pool[]>;
+    },
+    getStats: async (slug: string): Promise<any> => {
+      return api.get(`/protocols/${slug}/stats`);
+    },
+  },
+
+  // Pools
+  pools: {
+    list: async (filters?: PoolFilters): Promise<{ pools: Pool[]; pagination: any }> => {
+      return api.get('/pools', { params: filters }) as Promise<{ pools: Pool[]; pagination: any }>;
+    },
+    getById: async (id: string): Promise<Pool> => {
+      return api.get(`/pools/${id}`) as Promise<Pool>;
+    },
+    getTop: async (limit: number = 10): Promise<Pool[]> => {
+      return api.get(`/pools/top/${limit}`) as Promise<Pool[]>;
+    },
+    search: async (query: string): Promise<Pool[]> => {
+      return api.get(`/pools/search/${query}`) as Promise<Pool[]>;
+    },
+    getStats: async (): Promise<any> => {
+      return api.get('/pools/stats/overview');
+    },
+    getSimilar: async (id: string): Promise<Pool[]> => {
+      return api.get(`/pools/${id}/similar`) as Promise<Pool[]>;
+    },
+  },
+
+  // Portfolio
+  portfolio: {
+    get: async (address: string): Promise<Portfolio> => {
+      return api.get(`/portfolio/${address}`) as Promise<Portfolio>;
+    },
+    addPosition: async (address: string, data: { poolId: string; amount: number; amountUSD?: number }): Promise<any> => {
+      return api.post(`/portfolio/${address}/positions`, data);
+    },
+    removePosition: async (address: string, poolId: string): Promise<any> => {
+      return api.delete(`/portfolio/${address}/positions/${poolId}`);
+    },
+    getWatchlist: async (address: string): Promise<any> => {
+      return api.get(`/portfolio/${address}/watchlist`);
+    },
+    addToWatchlist: async (address: string, data: { poolId: string; notes?: string }): Promise<any> => {
+      return api.post(`/portfolio/${address}/watchlist`, data);
+    },
+    removeFromWatchlist: async (address: string, poolId: string): Promise<any> => {
+      return api.delete(`/portfolio/${address}/watchlist/${poolId}`);
+    },
+    getSuggestions: async (address: string, riskTolerance?: string): Promise<any> => {
+      return api.get(`/portfolio/${address}/suggestions`, { params: { riskTolerance } });
+    },
+  },
+
+  // AI Chat
+  ai: {
+    chat: async (data: {
+      messages: Array<{ role: string; content: string }>;
+      walletAddress?: string;
+      sessionId?: string;
+    }): Promise<any> => {
+      return api.post('/ai/chat', data);
+    },
+    suggest: async (data: { walletAddress: string; assets?: string[] }): Promise<any> => {
+      return api.post('/ai/suggest', data);
+    },
+    getHistory: async (sessionId: string): Promise<any> => {
+      return api.get(`/ai/chat/history/${sessionId}`);
+    },
+  },
+
+  // Health
+  health: async (): Promise<any> => {
+    return api.get('/health');
+  },
+};
+
+export default apiClient;
