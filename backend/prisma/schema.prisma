@@ -1,6 +1,10 @@
 // Apyhub Database Schema
 // DeFi APY Aggregator Platform
 
+// ==============================================
+// GENERATOR & DATASOURCE
+// ==============================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,171 +14,187 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==============================================
+// CORE MODELS
+// ==============================================
+
+// User Model - Main user entity
+model User {
+  id         String      @id @default(uuid())
+  address    String      @unique
+  email      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  portfolios Portfolio[]
+  aiChats    AiChat[]
+
+  @@index([address])
+}
+
 // Protocol Model - DeFi Protocols (Aave, Compound, etc.)
 model Protocol {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?
-  website     String?
-  logo        String?
-  chain       String   // ethereum, polygon, bsc
-  audited     Boolean  @default(false)
-  auditedBy   String?
-  tvl         Decimal  @default(0) @db.Decimal(20, 2)
-  active      Boolean  @default(true)
+  id        String       @id @default(uuid())
+  name      String       @unique
+  slug      String       @unique
+  baseUrl   String?
+  chainId   Int
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  positions LpPosition[]
+
+  @@index([slug])
+  @@index([chainId])
+}
+
+// ==============================================
+// POOL & POSITION MODELS
+// ==============================================
+
+// LP Position data - Core pool information
+model LpPosition {
+  id         String   @id @default(uuid())
+  protocolId String
+  protocol   Protocol @relation(fields: [protocolId], references: [id])
+
+  // Position identifiers
+  poolAddress   String
+  poolName      String
+  token0Symbol  String
+  token1Symbol  String
+  token0Address String
+  token1Address String
+
+  // Metrics
+  apy       Float
+  apr       Float?
+  tvlUsd    Float
+  volume24h Float?
+  fees24h   Float?
+
+  // Risk metrics
+  ilRisk     Float? // Impermanent loss risk score (0-100)
+  auditScore Float? // Audit/security score (0-100)
+  riskLevel  String? // LOW, MEDIUM, HIGH
+
+  // Additional data
+  chainId     Int
+  dexName     String?
+  farmRewards Json? // Array of reward tokens
+  isStable    Boolean @default(false)
+
+  // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  lastFetched DateTime @default(now())
 
-  pools       Pool[]
+  portfolios PortfolioPosition[]
 
-  @@index([chain])
-  @@index([active])
+  @@unique([protocolId, poolAddress])
+  @@index([apy])
+  @@index([tvlUsd])
+  @@index([chainId])
+  @@index([token0Symbol, token1Symbol])
 }
 
-// Liquidity Pool Model
-model Pool {
-  id              String   @id @default(uuid())
-  protocolId      String
-  protocol        Protocol @relation(fields: [protocolId], references: [id], onDelete: Cascade)
+// PYUSD specific positions - Specialized for PYUSD pairs
+model PyusdPosition {
+  id String @id @default(uuid())
 
-  name            String
-  asset           String   // USDC, ETH, DAI, etc.
-  assetAddress    String?  // Contract address
-  poolAddress     String   @unique
+  poolName     String
+  protocolName String
+  apy          Float
+  tvlUsd       Float
 
-  // Pool Type
-  poolType        String   // single, double (LP), lending, staking
-  isLoopable      Boolean  @default(false) // Can use leverage/looping
+  // PYUSD specific fields
+  isPrimary      Boolean @default(true) // Primary PYUSD pool
+  stabilityScore Float? // Stability score for PYUSD pairs
 
-  // APY Data
-  supplyAPY       Decimal  @db.Decimal(10, 4)
-  borrowAPY       Decimal? @db.Decimal(10, 4)
-  rewardAPY       Decimal? @db.Decimal(10, 4)
-  totalAPY        Decimal  @db.Decimal(10, 4) // Combined APY
+  chainId     Int
+  poolAddress String
 
-  // TVL & Liquidity
-  tvl             Decimal  @default(0) @db.Decimal(20, 2)
-  availableLiquidity Decimal? @db.Decimal(20, 2)
-  utilizationRate Decimal? @db.Decimal(5, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // Risk Assessment
-  riskLevel       String   @default("medium") // low, medium, high
-  riskScore       Int?     @default(50) // 0-100
-
-  // Additional Info
-  minDeposit      Decimal? @db.Decimal(20, 2)
-  lockPeriod      Int?     // in days, 0 for no lock
-
-  active          Boolean  @default(true)
-  verified        Boolean  @default(false)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lastFetched     DateTime @default(now())
-
-  historicalData  HistoricalAPY[]
-  userPositions   UserPosition[]
-
-  @@index([protocolId])
-  @@index([asset])
-  @@index([poolType])
-  @@index([isLoopable])
-  @@index([totalAPY])
-  @@index([riskLevel])
-  @@index([active])
+  @@unique([poolAddress, chainId])
+  @@index([apy])
+  @@index([isPrimary])
 }
 
-// Historical APY Data
-model HistoricalAPY {
-  id              String   @id @default(uuid())
-  poolId          String
-  pool            Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
+// ==============================================
+// PORTFOLIO MODELS
+// ==============================================
 
-  supplyAPY       Decimal  @db.Decimal(10, 4)
-  borrowAPY       Decimal? @db.Decimal(10, 4)
-  totalAPY        Decimal  @db.Decimal(10, 4)
-  tvl             Decimal  @db.Decimal(20, 2)
+// User's portfolio
+model Portfolio {
+  id            String              @id @default(uuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id])
+  name          String
+  totalValueUsd Float               @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  positions     PortfolioPosition[]
 
-  timestamp       DateTime @default(now())
-
-  @@index([poolId])
-  @@index([timestamp])
-}
-
-// User Model (for wallet addresses)
-model User {
-  id              String   @id @default(uuid())
-  walletAddress   String   @unique
-  ens             String?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  lastSeen        DateTime @default(now())
-
-  positions       UserPosition[]
-  watchlist       Watchlist[]
-
-  @@index([walletAddress])
-}
-
-// User Positions (tracked from blockchain)
-model UserPosition {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  poolId          String
-  pool            Pool     @relation(fields: [poolId], references: [id], onDelete: Cascade)
-
-  amount          Decimal  @db.Decimal(30, 8)
-  amountUSD       Decimal? @db.Decimal(20, 2)
-
-  entryAPY        Decimal  @db.Decimal(10, 4)
-  currentAPY      Decimal  @db.Decimal(10, 4)
-
-  earnings        Decimal  @default(0) @db.Decimal(20, 8)
-  earningsUSD     Decimal? @default(0) @db.Decimal(20, 2)
-
-  startDate       DateTime @default(now())
-  lastUpdated     DateTime @updatedAt
-
-  active          Boolean  @default(true)
-
-  @@unique([userId, poolId])
-  @@index([userId])
-  @@index([poolId])
-  @@index([active])
-}
-
-// Watchlist - User favorite pools
-model Watchlist {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  poolId          String
-
-  notes           String?
-
-  createdAt       DateTime @default(now())
-
-  @@unique([userId, poolId])
   @@index([userId])
 }
 
-// AI Chat History (Optional - for storing chat context)
-model ChatHistory {
-  id              String   @id @default(uuid())
-  sessionId       String
-  userAddress     String?
+// User's positions in LP pools
+model PortfolioPosition {
+  id          String     @id @default(uuid())
+  portfolioId String
+  portfolio   Portfolio  @relation(fields: [portfolioId], references: [id])
+  positionId  String
+  position    LpPosition @relation(fields: [positionId], references: [id])
 
-  role            String   // user, assistant, system
-  content         String   @db.Text
+  amountUsd    Float
+  shares       Float?
+  entryPrice   Float?
+  currentPrice Float?
+  pnlUsd       Float?
+  pnlPercent   Float?
 
-  createdAt       DateTime @default(now())
+  enteredAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([sessionId])
-  @@index([userAddress])
+  @@index([portfolioId])
+  @@index([positionId])
+}
+
+// ==============================================
+// AI & CHAT MODELS
+// ==============================================
+
+// AI Chat history
+model AiChat {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  query      String @db.Text
+  response   String @db.Text
+  context    Json? // Store relevant LP positions shown
+  confidence Float? // AI confidence score
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
   @@index([createdAt])
+}
+
+// ==============================================
+// CACHE & UTILITY MODELS
+// ==============================================
+
+// Cache for API responses
+model ApiCache {
+  id        String   @id @default(uuid())
+  endpoint  String   @unique
+  data      Json
+  ttl       Int      @default(60) // seconds
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([endpoint])
+  @@index([expiresAt])
 }
