@@ -1,6 +1,6 @@
-# Node
+# Dependencies - NEVER COMMIT THESE
 node_modules/
-**/node_modules/
+*/node_modules/
 
 # Build outputs
 /dist/
@@ -31,8 +31,9 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Coverage
-coverage/
+# Build folders
+dist/
+build/
 
 # Editor
 .vscode/
