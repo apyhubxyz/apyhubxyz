@@ -31,6 +31,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@langchain/core": "^1.0.1",
+    "@langchain/openai": "^1.0.0",
     "@prisma/client": "^6.17.1",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@tanstack/react-query": "^5.90.5",
@@ -47,11 +49,14 @@
     "graphql-request": "^7.3.1",
     "helmet": "^7.1.0",
     "ioredis": "^5.8.1",
+    "langchain": "^1.0.1",
     "openai": "^6.5.0",
+    "p-limit": "^5.0.0",
     "react-hot-toast": "^2.6.0",
     "recharts": "^3.3.0",
     "viem": "^2.38.3",
     "wagmi": "^2.18.1",
+    "ws": "^8.16.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
