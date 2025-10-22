@@ -10,7 +10,7 @@ protocolsRoutes.get('/', async (req: Request, res: Response, next: NextFunction)
   try {
     const { chain, active } = req.query;
 
-    const protocols = await prisma.protocol.findMany({
+    const protocols: any[] = await (prisma as any).protocol.findMany({
       where: {
         ...(chain && { chain: chain as string }),
         ...(active !== undefined && { active: active === 'true' }),
@@ -39,7 +39,7 @@ protocolsRoutes.get('/:slug', async (req: Request, res: Response, next: NextFunc
   try {
     const { slug } = req.params;
 
-    const protocol = await prisma.protocol.findUnique({
+    const protocol: any = await (prisma as any).protocol.findUnique({
       where: { slug },
       include: {
         pools: {
@@ -71,7 +71,7 @@ protocolsRoutes.get('/:slug/pools', async (req: Request, res: Response, next: Ne
   try {
     const { slug } = req.params;
 
-    const pools = await PoolService.getPoolsByProtocol(slug);
+  const pools = await PoolService.getPoolsByProtocol(slug);
 
     if (pools === null) {
       return res.status(404).json({
@@ -96,7 +96,7 @@ protocolsRoutes.get('/:slug/stats', async (req: Request, res: Response, next: Ne
   try {
     const { slug } = req.params;
 
-    const protocol = await prisma.protocol.findUnique({
+    const protocol: any = await (prisma as any).protocol.findUnique({
       where: { slug },
       include: {
         pools: {
@@ -113,10 +113,12 @@ protocolsRoutes.get('/:slug/stats', async (req: Request, res: Response, next: Ne
     }
 
     const totalPools = protocol.pools.length;
-    const avgAPY =
-      protocol.pools.reduce((sum, pool) => sum + pool.totalAPY.toNumber(), 0) /
-      totalPools;
-    const highestAPY = Math.max(...protocol.pools.map((p) => p.totalAPY.toNumber()));
+    const avgAPY = totalPools > 0
+      ? protocol.pools.reduce((sum, pool) => sum + (pool.totalAPY as unknown as number), 0) / totalPools
+      : 0;
+    const highestAPY = totalPools > 0
+      ? Math.max(...protocol.pools.map((p) => (p.totalAPY as unknown as number)))
+      : 0;
 
     res.json({
       success: true,
