@@ -15,6 +15,19 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
     NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001',
   },
+  // Proxy API and WebSocket to backend in development for same-origin calls
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+      {
+        source: '/ws',
+        destination: 'http://localhost:3001/ws',
+      },
+    ]
+  },
   webpack: (config, { isServer }) => {
     // Ignore optional dependencies that cause warnings
     config.resolve.fallback = {

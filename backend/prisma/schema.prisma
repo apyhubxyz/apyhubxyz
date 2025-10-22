@@ -38,10 +38,17 @@ model Protocol {
   slug      String       @unique
   baseUrl   String?
   chainId   Int
-  isActive  Boolean      @default(true)
+  // Frontend/backend expect these fields
+  chain     String?
+  audited   Boolean      @default(false)
+  logo      String?
+  website   String?
+  tvl       Decimal      @default(0) @db.Decimal(65, 30)
+  active    Boolean      @default(true)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   positions LpPosition[]
+  pools     Pool[]
 
   @@index([slug])
   @@index([chainId])
@@ -50,6 +57,80 @@ model Protocol {
 // ==============================================
 // POOL & POSITION MODELS
 // ==============================================
+
+// New Pool model used by PoolService and API routes
+enum PoolType {
+  single
+  double
+  lending
+  staking
+}
+
+enum RiskLevel {
+  low
+  medium
+  high
+}
+
+model Pool {
+  id                String       @id @default(uuid())
+  protocolId        String
+  protocol          Protocol     @relation(fields: [protocolId], references: [id])
+
+  // Descriptive
+  name              String
+  asset             String
+  assetAddress      String?
+  poolAddress       String       @unique
+  poolType          PoolType
+  isLoopable        Boolean      @default(false)
+
+  // Rates
+  supplyAPY         Float
+  borrowAPY         Float?
+  rewardAPY         Float?
+  totalAPY          Float
+
+  // Metrics
+  tvl               Float        @default(0)
+  availableLiquidity Float?
+  utilizationRate   Float?
+
+  // Risk & flags
+  riskLevel         RiskLevel
+  riskScore         Float?
+  minDeposit        Float?
+  lockPeriod        Int?
+  active            Boolean      @default(true)
+  verified          Boolean      @default(false)
+
+  // Timestamps
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Relations
+  historicalData    PoolHistoricalData[]
+
+  @@index([asset])
+  @@index([totalAPY])
+  @@index([tvl])
+  @@index([protocolId])
+}
+
+model PoolHistoricalData {
+  id         String   @id @default(uuid())
+  poolId     String
+  pool       Pool     @relation(fields: [poolId], references: [id])
+
+  supplyAPY  Float
+  borrowAPY  Float?
+  totalAPY   Float
+  tvl        Float
+  timestamp  DateTime @default(now())
+
+  @@index([poolId])
+  @@index([timestamp])
+}
 
 // LP Position data - Core pool information
 model LpPosition {

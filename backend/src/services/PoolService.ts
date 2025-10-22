@@ -49,7 +49,7 @@ export class PoolService {
     const { page = 1, limit = 20 } = paginationOptions;
 
     // Build where clause
-    const where: Prisma.PoolWhereInput = {
+  const where: any = {
       active,
       ...(asset && { asset: { contains: asset, mode: 'insensitive' } }),
       ...(poolType && { poolType }),
@@ -75,7 +75,7 @@ export class PoolService {
     const skip = (page - 1) * limit;
 
     const [pools, total] = await Promise.all([
-      prisma.pool.findMany({
+  (prisma as any).pool.findMany({
         where,
         include: {
           protocol: {
@@ -94,7 +94,7 @@ export class PoolService {
         skip,
         take: limit,
       }),
-      prisma.pool.count({ where }),
+  (prisma as any).pool.count({ where }),
     ]);
 
     return {
@@ -112,7 +112,7 @@ export class PoolService {
    * Get a single pool by ID with all details
    */
   async getPoolById(id: string) {
-    const pool = await prisma.pool.findUnique({
+  const pool = await (prisma as any).pool.findUnique({
       where: { id },
       include: {
         protocol: true,
@@ -130,7 +130,7 @@ export class PoolService {
    * Get pool by address
    */
   async getPoolByAddress(address: string) {
-    return await prisma.pool.findUnique({
+  return await (prisma as any).pool.findUnique({
       where: { poolAddress: address },
       include: {
         protocol: true,
@@ -142,7 +142,7 @@ export class PoolService {
    * Get top pools by APY
    */
   async getTopPools(limit: number = 10) {
-    return await prisma.pool.findMany({
+  return await (prisma as any).pool.findMany({
       where: { active: true, verified: true },
       include: {
         protocol: {
@@ -170,7 +170,7 @@ export class PoolService {
       return null;
     }
 
-    return await prisma.pool.findMany({
+  return await (prisma as any).pool.findMany({
       where: {
         protocolId: protocol.id,
         active: true,
@@ -212,13 +212,13 @@ export class PoolService {
    */
   async getPoolStats() {
     const [totalPools, activePools, totalTVL, avgAPY] = await Promise.all([
-      prisma.pool.count(),
-      prisma.pool.count({ where: { active: true } }),
-      prisma.pool.aggregate({
+      (prisma as any).pool.count(),
+      (prisma as any).pool.count({ where: { active: true } }),
+      (prisma as any).pool.aggregate({
         where: { active: true },
         _sum: { tvl: true },
       }),
-      prisma.pool.aggregate({
+      (prisma as any).pool.aggregate({
         where: { active: true },
         _avg: { totalAPY: true },
       }),
@@ -227,8 +227,8 @@ export class PoolService {
     return {
       totalPools,
       activePools,
-      totalTVL: totalTVL._sum.tvl?.toString() || '0',
-      avgAPY: avgAPY._avg.totalAPY?.toNumber() || 0,
+      totalTVL: totalTVL._sum.tvl ?? 0,
+      avgAPY: avgAPY._avg.totalAPY ?? 0,
     };
   }
 
@@ -236,7 +236,7 @@ export class PoolService {
    * Get similar pools (same asset, different protocols)
    */
   async getSimilarPools(poolId: string) {
-    const pool = await prisma.pool.findUnique({
+  const pool = await (prisma as any).pool.findUnique({
       where: { id: poolId },
     });
 
@@ -244,7 +244,7 @@ export class PoolService {
       return [];
     }
 
-    return await prisma.pool.findMany({
+  return await (prisma as any).pool.findMany({
       where: {
         asset: pool.asset,
         id: { not: poolId },

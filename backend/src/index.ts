@@ -209,9 +209,9 @@ app.get('/api/health', async (req, res) => {
 });
 
 // API Routes
-// NOTE: Some routes temporarily disabled due to schema mismatch
-// app.use('/api/protocols', protocolsRoutes);
-// app.use('/api/pools', poolsRoutes);
+// Pools/Protocols enabled (schema aligned)
+app.use('/api/protocols', protocolsRoutes);
+app.use('/api/pools', poolsRoutes);
 app.use('/api/portfolio', portfolioRoutes(provider));
 app.use('/api/ai', aiRoutes(provider));
 

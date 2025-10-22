@@ -39,7 +39,8 @@ async function main() {
       slug: 'aave-v3',
       baseUrl: 'https://aave.com',
       chainId: 1, // Ethereum mainnet
-      isActive: true,
+  // @ts-ignore - Prisma types will include `active` after `npx prisma generate`
+  active: true,
     },
   });
 
@@ -49,7 +50,8 @@ async function main() {
       slug: 'compound',
       baseUrl: 'https://compound.finance',
       chainId: 1, // Ethereum mainnet
-      isActive: true,
+  // @ts-ignore - Prisma types will include `active` after `npx prisma generate`
+  active: true,
     },
   });
 
@@ -59,7 +61,8 @@ async function main() {
       slug: 'curve',
       baseUrl: 'https://curve.fi',
       chainId: 1, // Ethereum mainnet
-      isActive: true,
+  // @ts-ignore - Prisma types will include `active` after `npx prisma generate`
+  active: true,
     },
   });
 
@@ -69,11 +72,112 @@ async function main() {
       slug: 'uniswap-v3',
       baseUrl: 'https://uniswap.org',
       chainId: 1, // Ethereum mainnet
-      isActive: true,
+  // @ts-ignore - Prisma types will include `active` after `npx prisma generate`
+  active: true,
     },
   });
 
   console.log('✅ Protocols created');
+
+  // Create Pools (new model)
+  const pools = await Promise.all([
+    // @ts-ignore - model available after prisma generate
+    prisma.pool.create({
+      data: {
+        protocolId: aave.id,
+        name: 'Aave V3 USDC Lending',
+        asset: 'USDC',
+        assetAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        poolAddress: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c',
+        poolType: 'lending',
+        isLoopable: true,
+        supplyAPY: 5.1,
+        borrowAPY: 3.2,
+        rewardAPY: 0.5,
+        totalAPY: 5.6,
+        tvl: 820_000_000,
+        availableLiquidity: 220_000_000,
+        utilizationRate: 62.5,
+        riskLevel: 'low',
+        riskScore: 92,
+        minDeposit: 10,
+        verified: true,
+        active: true,
+      },
+    }),
+  // @ts-ignore - model available after prisma generate
+  prisma.pool.create({
+      data: {
+        protocolId: compound.id,
+        name: 'Compound USDC Lending',
+        asset: 'USDC',
+        assetAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        poolAddress: '0x39AA39c021dfbaE8faC545936693aC917d5E7563',
+        poolType: 'lending',
+        isLoopable: true,
+        supplyAPY: 5.3,
+        borrowAPY: 3.4,
+        rewardAPY: 0.4,
+        totalAPY: 5.7,
+        tvl: 450_000_000,
+        availableLiquidity: 150_000_000,
+        utilizationRate: 66.1,
+        riskLevel: 'low',
+        riskScore: 90,
+        minDeposit: 10,
+        verified: true,
+        active: true,
+      },
+    }),
+  // @ts-ignore - model available after prisma generate
+  prisma.pool.create({
+      data: {
+        protocolId: curve.id,
+        name: 'Curve 3pool Staking',
+        asset: 'USDC',
+        assetAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        poolAddress: '0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7',
+        poolType: 'staking',
+        isLoopable: false,
+        supplyAPY: 4.8,
+        rewardAPY: 0.6,
+        totalAPY: 5.4,
+        tvl: 980_000_000,
+        availableLiquidity: 310_000_000,
+        utilizationRate: 55.2,
+        riskLevel: 'medium',
+        riskScore: 85,
+        minDeposit: 50,
+        verified: true,
+        active: true,
+      },
+    }),
+  ]);
+
+  console.log('✅ Pools created');
+
+  // Historical data for pools (last 7 days)
+  const now = new Date();
+  for (const pool of pools) {
+    const rows: { poolId: string; supplyAPY: number; borrowAPY?: number; totalAPY: number; tvl: number; timestamp: Date }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const ts = new Date(now);
+      ts.setDate(now.getDate() - i);
+      const jitter = (v: number, p = 0.5) => v + (Math.random() * p - p / 2);
+      rows.push({
+        poolId: pool.id,
+        supplyAPY: jitter(pool.supplyAPY, 0.3),
+        borrowAPY: pool.borrowAPY ? jitter(pool.borrowAPY, 0.3) : undefined,
+        totalAPY: jitter(pool.totalAPY, 0.4),
+        tvl: Math.max(0, jitter(pool.tvl, pool.tvl * 0.02)),
+        timestamp: ts,
+      });
+    }
+  // @ts-ignore - model available after prisma generate
+  await prisma.poolHistoricalData.createMany({ data: rows });
+  }
+
+  console.log('✅ Pool historical data created');
 
   // Create LP Positions for Aave
   const aaveUSDC = await prisma.lpPosition.create({
