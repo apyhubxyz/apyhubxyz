@@ -3,6 +3,9 @@ import OpenAI from 'openai';
 import { EnhancedDeFiService } from './EnhancedDeFiService';
 import { AvailNexusBridge } from './AvailNexusBridge';
 import { ethers } from 'ethers';
+import Redis from 'ioredis';
+import { getEnvioHyperIndex } from './EnvioHyperIndex';
+import { DEFI_API_CONFIG } from '../config/defi-apis';
 
 // Document interface for RAG
 interface Document {
@@ -599,14 +602,36 @@ User Context:
   ): Promise<string> {
     const lastMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
 
-    // Get mock top pools for fallback
-    const topPools = [
-      { protocol: 'Aave V3', poolName: 'USDC Supply', apy: 12.5, tvl: 1000000, riskScore: 25, chain: 'Ethereum' },
-      { protocol: 'Compound V3', poolName: 'ETH Supply', apy: 8.3, tvl: 500000, riskScore: 30, chain: 'Ethereum' },
-      { protocol: 'Pendle', poolName: 'PT-USDC', apy: 15.2, tvl: 750000, riskScore: 45, chain: 'Arbitrum' },
-      { protocol: 'Liquity V2', poolName: 'BOLD Loop', apy: 21.0, tvl: 250000, riskScore: 60, chain: 'Ethereum' },
-      { protocol: 'Fluid', poolName: 'cbBTC Leverage', apy: 18.5, tvl: 300000, riskScore: 70, chain: 'Base' }
+    // Fetch a small set of real pools from Envio for fallback output (no mocks)
+    const DEFAULT_PROTOCOLS = [
+      'aave','compound','curve','balancer','uniswap-v3','sushiswap','yearn','beefy',
+      'pendle','silo','morpho','radiant','stargate','aerodrome','rocketpool','lido'
     ];
+
+    const provider = new ethers.JsonRpcProvider(
+      process.env.RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo'
+    );
+    const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    const envio = getEnvioHyperIndex(provider, {
+      apiKey: DEFI_API_CONFIG.envio.apiKey,
+      indexerUrl: DEFI_API_CONFIG.envio.hyperIndexUrl,
+      networkId: DEFI_API_CONFIG.envio.networkId,
+      cacheEnabled: true,
+      cacheTTL: DEFI_API_CONFIG.envio.cacheTTL,
+    }, redis);
+
+    const raw = await envio.getIndexedPools(DEFAULT_PROTOCOLS, { limit: 100, offset: 0 });
+    const topPools = raw
+      .map(p => ({
+        protocol: (p.protocol || 'Protocol').toString().toUpperCase(),
+        poolName: `${p.tokenA || 'TOKEN0'}/${p.tokenB || 'TOKEN1'}`,
+        apy: Number(p.apy) || 0,
+        tvl: Number(p.tvlUsd) || 0,
+        riskScore: /USD|USDC|USDT|DAI|PYUSD/i.test(`${p.tokenA}${p.tokenB}`) ? 25 : 50,
+        chain: DEFI_API_CONFIG.envio.networkId === 1 ? 'Ethereum' : `chain-${DEFI_API_CONFIG.envio.networkId}`,
+      }))
+      .sort((a, b) => b.apy - a.apy)
+      .slice(0, 5);
 
     if (lastMessage.includes('recommend') || lastMessage.includes('suggest')) {
       return `Based on current market conditions, here are top opportunities on ApyHub.xyz:
@@ -633,7 +658,7 @@ Visit ApyHub.xyz to explore 50+ protocols with advanced filtering and AI-powered
 Example: Bridge USDC from Ethereum to Arbitrum via Nexus, then deploy into GMX for 25% APY.`;
     }
 
-    return `Welcome to ApyHub.xyz! I'm your AI yield strategist.
+  return `Welcome to ApyHub.xyz! I'm your AI yield strategist.
 
 I can help you:
 • Find the best yields across 50+ DeFi protocols
@@ -644,7 +669,7 @@ I can help you:
 Current market highlights:
 - Avg stablecoin APY: 8-12%
 - ETH staking + leverage: 15-25%
-- Risk-adjusted opportunities: ${topPools.length} pools above 10% APY
+ - Risk-adjusted opportunities: ${topPools.length} pools above 10% APY
 
 How can I help optimize your yield today?`;
   }
