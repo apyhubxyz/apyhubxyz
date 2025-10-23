@@ -7,12 +7,14 @@ import rateLimit from 'express-rate-limit';
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 import path from 'path';
-import { apyRoutes } from './routes/apy';
+// import { apyRoutes } from './routes/apy';
 import { poolsRoutes } from './routes/pools';
 import { protocolsRoutes } from './routes/protocols';
 import { portfolioRoutes } from './routes/portfolio';
 import { aiRoutes } from './routes/ai';
-import { DeFiService } from './services/DeFiService';
+import { envioRoutes } from './routes/envio';
+import positionsRoutes from './routes/positions';
+// import { DeFiService } from './services/DeFiService';
 import PrismaService from './services/PrismaService';
 // import { enhancedApyRoutes } from './routes/enhanced-apy';
 // import { enhancedAIRoutes, initializeEnhancedAI } from './routes/enhanced-ai';
@@ -66,8 +68,7 @@ const provider = new ethers.JsonRpcProvider(
   process.env.RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo'
 );
 
-// Initialize DeFi service (legacy - for backward compatibility)
-const defiService = new DeFiService(provider);
+// Legacy DeFi service removed (Envio-only data path)
 
 // Initialize Enhanced DeFi Service (disabled temporarily due to module issues)
 // const enhancedDeFi = getEnhancedDeFiService(provider);
@@ -108,13 +109,21 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     description: 'DeFi APY Aggregator API - Discover the best yield opportunities',
     endpoints: {
-      health: 'GET /api/health',
-      protocols: {
-        list: 'GET /api/protocols',
-        details: 'GET /api/protocols/:slug',
-        pools: 'GET /api/protocols/:slug/pools',
-        stats: 'GET /api/protocols/:slug/stats',
-      },
+    health: 'GET /api/health',
+    positions: {
+      list: 'GET /api/positions?protocol=Aave&chainId=1&sortBy=tvl',
+      stats: 'GET /api/positions/stats',
+      protocols: 'GET /api/positions/protocols',
+      chains: 'GET /api/positions/chains',
+      sync: 'POST /api/positions/sync',
+      websocket: 'GET /api/positions/ws',
+    },
+    protocols: {
+      list: 'GET /api/protocols',
+      details: 'GET /api/protocols/:slug',
+      pools: 'GET /api/protocols/:slug/pools',
+      stats: 'GET /api/protocols/:slug/stats',
+    },
       pools: {
         list: 'GET /api/pools?asset=USDC&poolType=lending&isLoopable=true',
         details: 'GET /api/pools/:id',
@@ -155,15 +164,7 @@ app.get('/', (req, res) => {
           analyzePortfolio: 'POST /api/v2/ai/analyze-portfolio'
         }
       },
-      legacy: {
-        apy: {
-          all: 'GET /api/apy/all',
-          byProtocol: 'GET /api/apy/protocol/:protocol',
-          byToken: 'GET /api/apy/token/:token',
-          compare: 'GET /api/apy/compare/:token',
-          historical: 'GET /api/apy/historical/:protocol/:token?days=7',
-        },
-      },
+      // legacy: removed (Envio-only)
     },
     documentation: 'https://docs.apyhub.xyz',
   });
@@ -214,13 +215,14 @@ app.use('/api/protocols', protocolsRoutes);
 app.use('/api/pools', poolsRoutes);
 app.use('/api/portfolio', portfolioRoutes(provider));
 app.use('/api/ai', aiRoutes(provider));
+app.use('/api/envio', envioRoutes());
+app.use('/api/positions', positionsRoutes);
 
 // Enhanced V2 routes - 50+ protocol support (disabled temporarily)
 // app.use('/api/v2/apy', enhancedApyRoutes);
 // app.use('/api/v2/ai', enhancedAIRoutes);
 
-// Legacy routes (for backward compatibility)
-app.use('/api/apy', apyRoutes(defiService));
+// Legacy APY routes removed (Envio-only)
 
 // 404 handler
 app.use((req, res) => {
@@ -285,13 +287,14 @@ server.listen(PORT, () => {
   console.log(`🔌 WebSocket: ws://localhost:${PORT}/ws`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`\n📁 Endpoints:`);
-  console.log(`   🔹 Protocols: /api/protocols (disabled)`);
-  console.log(`   🔹 Pools: /api/pools (disabled)`);
+  console.log(`   📊 LP Positions: /api/positions (Envio HyperSync)`);
+  console.log(`   🔹 Protocols: /api/protocols`);
+  console.log(`   🔹 Pools: /api/pools`);
   console.log(`   🔹 Portfolio: /api/portfolio/:address`);
   console.log(`   🔹 AI Chat: /api/ai/chat`);
   console.log(`   ⚡ Enhanced APY V2: /api/v2/apy/* (preparing)`);
   console.log(`   🤖 Enhanced AI V2: /api/v2/ai/* (preparing)`);
-  console.log(`   🔹 Legacy APY: /api/apy`);
+  // console.log(`   🔹 Legacy APY: /api/apy`);
   // console.log(`\n📈 Statistics:`);
   // console.log(`   📊 Total Protocols: ${stats.totalProtocols}`);
   // console.log(`   💰 Total TVL: $${(stats.totalTVL / 1e9).toFixed(2)}B`);
