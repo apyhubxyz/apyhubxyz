@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MagnifyingGlassIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import apiClient, { Protocol } from '@/lib/api'
 
 interface PoolFiltersProps {
   onFilterChange: (filters: any) => void
@@ -18,7 +19,28 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
     minAPY: '',
     riskLevel: '',
     isLoopable: '',
+    protocolId: '',
   })
+
+  const [protocols, setProtocols] = useState<Protocol[]>([])
+
+  // Fetch protocols (optionally filtered by chain) for the dropdown
+  useEffect(() => {
+    const fetchProtocols = async () => {
+      try {
+        const params: any = { active: true }
+        if (filters.chain) params.chain = filters.chain
+        const res: any = await apiClient.protocols.list(params)
+        const list: Protocol[] = Array.isArray(res) ? res : res?.data ?? []
+        // Sort by name for nicer UX
+        setProtocols(list.sort((a, b) => a.name.localeCompare(b.name)))
+      } catch (e) {
+        // fail silently; filter can still work without protocol options
+        setProtocols([])
+      }
+    }
+    fetchProtocols()
+  }, [filters.chain])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -40,6 +62,7 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
       minAPY: '',
       riskLevel: '',
       isLoopable: '',
+      protocolId: '',
     })
     onFilterChange({})
   }
@@ -97,6 +120,25 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
               <option value="DAI">DAI</option>
               <option value="ETH">ETH</option>
               <option value="WBTC">WBTC</option>
+            </select>
+          </div>
+
+          {/* Protocol Filter */}
+          <div>
+            <label className="block text-sm font-medium text-brown-700 dark:text-brown-300 mb-2">
+              Protocol
+            </label>
+            <select
+              value={filters.protocolId}
+              onChange={(e) => handleFilterChange('protocolId', e.target.value)}
+              className="w-full px-3 py-2 glass-dark border border-brown-300 dark:border-brown-600 rounded-lg focus:ring-2 focus:ring-brown-500 dark:focus:ring-purple-500 outline-none text-brown-900 dark:text-brown-100"
+            >
+              <option value="">All Protocols</option>
+              {protocols.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
             </select>
           </div>
 

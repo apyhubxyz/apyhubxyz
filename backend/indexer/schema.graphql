@@ -1,0 +1,298 @@
+"""
+Envio HyperSync GraphQL Schema
+Defines the data structure for indexed LP positions and yield data
+"""
+
+type Query {
+  # Get LP positions for a user
+  positions(userAddress: String!, chainId: Int, protocol: String): [Position!]!
+  
+  # Get pool information
+  pools(limit: Int = 100, offset: Int = 0, chainId: Int, orderBy: PoolOrderBy): [Pool!]!
+  pool(id: ID!): Pool
+  
+  # Get aggregated statistics
+  stats(chainId: Int, protocol: String): Stats!
+  
+  # Get user portfolio
+  portfolio(userAddress: String!): Portfolio!
+  
+  # Get transactions
+  transactions(userAddress: String, poolId: String, limit: Int = 100): [Transaction!]!
+}
+
+type Subscription {
+  # Real-time position updates
+  positionUpdated(userAddress: String!): Position!
+  
+  # Real-time pool updates  
+  poolUpdated(poolId: String!): Pool!
+  
+  # New transaction events
+  transactionCreated(userAddress: String): Transaction!
+}
+
+enum PoolOrderBy {
+  TVL_DESC
+  TVL_ASC
+  APY_DESC
+  APY_ASC
+  VOLUME_DESC
+  VOLUME_ASC
+  CREATED_DESC
+  CREATED_ASC
+}
+
+enum PositionType {
+  LP
+  LENDING
+  BORROWING
+  STAKING
+  FARMING
+  VAULT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+  SWAP
+  BORROW
+  REPAY
+  LIQUIDATION
+  HARVEST
+  STAKE
+  UNSTAKE
+}
+
+enum Chain {
+  ETHEREUM
+  ARBITRUM
+  OPTIMISM
+  BASE
+  POLYGON
+  AVALANCHE
+  BSC
+  SOLANA
+}
+
+type Position {
+  id: ID!
+  userAddress: String!
+  pool: Pool!
+  positionType: PositionType!
+  
+  # Token amounts
+  token0Symbol: String!
+  token0Amount: String!
+  token0ValueUSD: Float!
+  token1Symbol: String
+  token1Amount: String
+  token1ValueUSD: Float
+  
+  # Position metrics
+  totalValueUSD: Float!
+  apy: Float!
+  apyBreakdown: APYBreakdown!
+  fees24h: Float!
+  fees7d: Float!
+  feesTotal: Float!
+  impermanentLoss: Float!
+  impermanentLossUSD: Float!
+  
+  # Risk metrics
+  healthFactor: Float
+  liquidationPrice: Float
+  collateralRatio: Float
+  
+  # Metadata
+  nftTokenId: String
+  createdAt: String!
+  updatedAt: String!
+  lastHarvestAt: String
+}
+
+type Pool {
+  id: ID!
+  protocol: Protocol!
+  poolAddress: String!
+  poolName: String!
+  chain: Chain!
+  
+  # Token information
+  token0: Token!
+  token1: Token
+  lpToken: Token
+  
+  # Pool metrics
+  tvlUSD: Float!
+  volume24h: Float!
+  volume7d: Float!
+  volumeTotal: Float!
+  
+  # APY information
+  apy: Float!
+  apyBreakdown: APYBreakdown!
+  
+  # Fee information
+  swapFee: Float!
+  protocolFee: Float!
+  lpFee: Float!
+  
+  # Risk metrics
+  auditScore: Float!
+  impermanentLossRisk: String!
+  volatility: Float!
+  sharpeRatio: Float!
+  
+  # Additional features
+  isLoopable: Boolean!
+  hasRewards: Boolean!
+  rewardTokens: [Token!]
+  
+  # Metadata
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Protocol {
+  id: ID!
+  name: String!
+  slug: String!
+  category: String!
+  chains: [Chain!]!
+  tvlUSD: Float!
+  poolCount: Int!
+  userCount: Int!
+  website: String
+  twitter: String
+  github: String
+  audits: [Audit!]
+  riskScore: Float!
+}
+
+type Token {
+  id: ID!
+  address: String!
+  symbol: String!
+  name: String!
+  decimals: Int!
+  priceUSD: Float!
+  logoUrl: String
+  chain: Chain!
+}
+
+type APYBreakdown {
+  base: Float!
+  rewards: Float!
+  boost: Float!
+  fees: Float!
+  total: Float!
+}
+
+type Portfolio {
+  userAddress: String!
+  positions: [Position!]!
+  totalValueUSD: Float!
+  totalPnL: Float!
+  totalPnLPercent: Float!
+  weightedAPY: Float!
+  
+  # Breakdown by type
+  lpValueUSD: Float!
+  lendingValueUSD: Float!
+  borrowingValueUSD: Float!
+  stakingValueUSD: Float!
+  
+  # Risk metrics
+  diversificationScore: Float!
+  riskScore: Float!
+  exposureByChain: [ChainExposure!]!
+  exposureByProtocol: [ProtocolExposure!]!
+}
+
+type ChainExposure {
+  chain: Chain!
+  valueUSD: Float!
+  percentage: Float!
+}
+
+type ProtocolExposure {
+  protocol: Protocol!
+  valueUSD: Float!
+  percentage: Float!
+}
+
+type Transaction {
+  id: ID!
+  transactionHash: String!
+  userAddress: String!
+  pool: Pool!
+  transactionType: TransactionType!
+  
+  # Token amounts
+  token0Amount: String
+  token1Amount: String
+  token0ValueUSD: Float
+  token1ValueUSD: Float
+  totalValueUSD: Float!
+  
+  # Gas information
+  gasUsed: String!
+  gasPrice: String!
+  gasCostUSD: Float!
+  
+  # Metadata
+  blockNumber: Int!
+  timestamp: String!
+  status: String!
+}
+
+type Stats {
+  # Overall statistics
+  totalTVL: Float!
+  totalVolume24h: Float!
+  totalUsers: Int!
+  totalTransactions: Int!
+  
+  # By category
+  tvlByChain: [ChainTVL!]!
+  tvlByProtocol: [ProtocolTVL!]!
+  
+  # Top performers
+  topPoolsByAPY: [Pool!]!
+  topPoolsByTVL: [Pool!]!
+  topPoolsByVolume: [Pool!]!
+  
+  # Trends
+  tvlHistory: [TVLDataPoint!]!
+  volumeHistory: [VolumeDataPoint!]!
+}
+
+type ChainTVL {
+  chain: Chain!
+  tvl: Float!
+  changePercent24h: Float!
+}
+
+type ProtocolTVL {
+  protocol: Protocol!
+  tvl: Float!
+  changePercent24h: Float!
+}
+
+type TVLDataPoint {
+  timestamp: String!
+  value: Float!
+}
+
+type VolumeDataPoint {
+  timestamp: String!
+  value: Float!
+}
+
+type Audit {
+  auditor: String!
+  date: String!
+  reportUrl: String!
+  score: Float
+}
