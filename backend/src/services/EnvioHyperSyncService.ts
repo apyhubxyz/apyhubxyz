@@ -365,5 +365,12 @@ class EnvioHyperSyncService {
     return Array.from(chains);
   }
 }
-
-export default new EnvioHyperSyncService();
+// Lazy singleton to avoid reading env vars during module initialization
+let _instance: EnvioHyperSyncService | null = null;
+export function getHyperSyncService(): EnvioHyperSyncService {
+  if (!_instance) {
+    _instance = new EnvioHyperSyncService();
+  }
+  return _instance;
+}
+export { EnvioHyperSyncService };

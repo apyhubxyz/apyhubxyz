@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import hyperSyncService from '../services/EnvioHyperSyncService';
+import { getHyperSyncService } from '../services/EnvioHyperSyncService';
 
 const router = Router();
 
@@ -27,7 +27,9 @@ router.get('/', async (req: Request, res: Response) => {
     let positions;
 
     // Handle different query combinations
-    if (search) {
+  const hyperSyncService = getHyperSyncService();
+
+  if (search) {
       // For search, we'll filter the positions after fetching
       const allPositions = await hyperSyncService.queryPositions(userAddress as string);
       const searchTerm = (search as string).toLowerCase();
@@ -99,7 +101,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     const { userAddress } = req.query;
-    const stats = await hyperSyncService.getStats();
+  const stats = await getHyperSyncService().getStats();
 
     res.json({
       success: true,
@@ -181,7 +183,7 @@ router.get('/chains', async (req: Request, res: Response) => {
 router.post('/sync', async (req: Request, res: Response) => {
   try {
     // Since we don't have database yet, just refresh data
-    const positions = await hyperSyncService.queryPositions();
+  const positions = await getHyperSyncService().queryPositions();
     
     res.json({
       success: true,
