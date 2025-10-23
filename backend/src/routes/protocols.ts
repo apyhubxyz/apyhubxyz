@@ -114,10 +114,10 @@ protocolsRoutes.get('/:slug/stats', async (req: Request, res: Response, next: Ne
 
     const totalPools = protocol.pools.length;
     const avgAPY = totalPools > 0
-      ? protocol.pools.reduce((sum, pool) => sum + (pool.totalAPY as unknown as number), 0) / totalPools
+      ? protocol.pools.reduce((sum: number, pool: any) => sum + (pool.totalAPY as unknown as number), 0) / totalPools
       : 0;
     const highestAPY = totalPools > 0
-      ? Math.max(...protocol.pools.map((p) => (p.totalAPY as unknown as number)))
+      ? Math.max(...protocol.pools.map((p: any) => (p.totalAPY as unknown as number)))
       : 0;
 
     res.json({
