@@ -8,11 +8,6 @@ import PrismaService from './PrismaService';
 const prisma = PrismaService.getInstance();
 import { ProtocolRegistry } from './protocols/ProtocolRegistry';
 import { ProtocolAdapter, PoolPosition, ChainId, RiskLevel } from './protocols/ProtocolAdapter';
-import { AaveAdapter } from './protocols/adapters/AaveAdapter';
-import { PendleAdapter } from './protocols/adapters/PendleAdapter';
-
-// Import existing adapters
-import { lpAggregator } from './LpAggregatorService';
 
 export interface AggregatedPosition extends PoolPosition {
   protocolName: string;
@@ -92,19 +87,9 @@ export class EnhancedDeFiService {
   }
   
   private initializeAdapters(): void {
-    // Initialize protocol-specific adapters
-    const adapters: Array<[string, ProtocolAdapter]> = [
-      ['aave', new AaveAdapter(this.provider, this.redis)],
-      ['pendle', new PendleAdapter(this.provider, this.redis)],
-      // More adapters will be added here
-    ];
-    
-    for (const [id, adapter] of adapters) {
-      this.adapters.set(id, adapter);
-      this.registry.registerAdapter(id, adapter);
-    }
-    
-    console.log(`✅ Initialized ${this.adapters.size} protocol adapters`);
+    // Envio-only path: no protocol-specific adapters
+    this.adapters.clear();
+    console.log(`✅ Initialized 0 protocol adapters (Envio-only)`);
   }
   
   private setupUpdateQueue(): void {
@@ -133,9 +118,6 @@ export class EnhancedDeFiService {
       this.rateLimiter(() => this.fetchProtocolPositions(id, adapter))
     );
     
-    // Also fetch from existing LP aggregator for backward compatibility
-    const lpPositions = await lpAggregator.aggregateAllPositions();
-    
     // Combine all positions
     const allPositions: AggregatedPosition[] = [];
     const adapterResults = await Promise.allSettled(adapterPromises);
@@ -146,26 +128,7 @@ export class EnhancedDeFiService {
       }
     }
     
-    // Convert LP positions to AggregatedPosition format
-    for (const lpPos of lpPositions) {
-      const protocolInfo = this.registry.getProtocolInfo(lpPos.dexName?.toLowerCase() || '');
-      if (protocolInfo) {
-        allPositions.push({
-          ...lpPos,
-          protocolId: protocolInfo.id,
-          protocolName: protocolInfo.name,
-          protocolWebsite: protocolInfo.website,
-          poolType: 'liquidity',
-          chain: 'ethereum' as ChainId,
-          assets: [lpPos.token0Symbol, lpPos.token1Symbol],
-          underlyingTokens: [
-            { symbol: lpPos.token0Symbol, address: lpPos.token0Address, decimals: 18 },
-            { symbol: lpPos.token1Symbol, address: lpPos.token1Address, decimals: 18 },
-          ],
-          lastUpdated: new Date(),
-        } as AggregatedPosition);
-      }
-    }
+    // Envio-only: skip legacy LP aggregator conversion
     
     // Apply filters and sorting
     let filtered = this.applyFilters(allPositions, filters);
@@ -466,7 +429,7 @@ export class EnhancedDeFiService {
   private async savePosition(position: AggregatedPosition): Promise<void> {
     try {
       // Get or create protocol
-      await prisma.protocol.upsert({
+  await (prisma as any).protocol.upsert({
         where: { slug: position.protocolId },
         update: {
           name: position.protocolName,
@@ -476,7 +439,7 @@ export class EnhancedDeFiService {
           name: position.protocolName,
           slug: position.protocolId,
           chainId: 1, // Default to Ethereum
-          isActive: true,
+          active: true,
         },
       });
       
