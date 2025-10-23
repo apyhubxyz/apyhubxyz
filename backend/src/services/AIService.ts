@@ -49,7 +49,7 @@ export class AIService {
       }
 
       // Get pool data context
-      const topPools = await prisma.pool.findMany({
+  const topPools = await (prisma as any).pool.findMany({
         where: { active: true, verified: true },
         include: {
           protocol: {
@@ -130,14 +130,14 @@ Guidelines:
     walletAddress: string,
     assets?: string[]
   ): Promise<string> {
-    const portfolio = await this.portfolioService.getUserPortfolio(walletAddress);
+  const portfolio = await this.portfolioService.getUserPortfolio(walletAddress);
 
     // Get best pools for user's assets or suggested assets
     const targetAssets = assets || (portfolio.positions.length > 0
-      ? portfolio.positions.map(p => p.pool.asset)
+      ? portfolio.positions.map((p: any) => p.pool.asset)
       : ['USDC', 'ETH', 'DAI']);
 
-    const suggestions = await prisma.pool.findMany({
+  const suggestions = await (prisma as any).pool.findMany({
       where: {
         asset: { in: targetAssets },
         active: true,
@@ -160,7 +160,7 @@ Guidelines:
       response += 'Here are some top yield opportunities to get started:\n\n';
     }
 
-    suggestions.forEach((pool, index) => {
+  suggestions.forEach((pool: any, index: number) => {
       response += `${index + 1}. **${pool.name}** (${pool.protocol.name})\n`;
       response += `   - APY: ${pool.totalAPY.toFixed(2)}%\n`;
       response += `   - TVL: $${Number(pool.tvl).toLocaleString()}\n`;
@@ -222,7 +222,7 @@ Guidelines:
         return await this.getSimpleSuggestions(walletAddress);
       }
 
-      const topPools = await prisma.pool.findMany({
+  const topPools = await (prisma as any).pool.findMany({
         where: { active: true, verified: true },
         include: { protocol: true },
         orderBy: { totalAPY: 'desc' },
@@ -231,14 +231,14 @@ Guidelines:
 
       return `Here are the top 3 pools by APY:\n\n${topPools
         .map(
-          (p, i) =>
+          (p: any, i: number) =>
             `${i + 1}. ${p.name}: ${p.totalAPY}% APY (${p.riskLevel} risk)`
         )
         .join('\n')}`;
     }
 
     if (lastMessage.includes('loop')) {
-      const loopablePools = await prisma.pool.count({
+  const loopablePools = await (prisma as any).pool.count({
         where: { isLoopable: true, active: true },
       });
 
@@ -274,15 +274,17 @@ Visit apyhub.xyz to explore all opportunities!`;
     messages: ChatMessage[]
   ) {
     try {
-      const records = messages.map((msg) => ({
-        sessionId,
-        userAddress,
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Persist lightweight chat history in ApiCache keyed by session
+      const key = `chat:session:${sessionId}`;
+      const ttlSeconds = 86400; // 1 day
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
-      await prisma.chatHistory.createMany({
-        data: records,
+      // Upsert into ApiCache (endpoint is unique)
+      await (prisma as any).apiCache.upsert({
+        where: { endpoint: key },
+        update: { data: messages, ttl: ttlSeconds, expiresAt },
+        create: { endpoint: key, data: messages, ttl: ttlSeconds, expiresAt },
       });
     } catch (error) {
       console.error('Error saving chat history:', error);
@@ -293,15 +295,10 @@ Visit apyhub.xyz to explore all opportunities!`;
    * Get chat history for a session
    */
   async getChatHistory(sessionId: string): Promise<ChatMessage[]> {
-    const history = await prisma.chatHistory.findMany({
-      where: { sessionId },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    return history.map((h) => ({
-      role: h.role as 'user' | 'assistant' | 'system',
-      content: h.content,
-    }));
+    const key = `chat:session:${sessionId}`;
+    const cache = await (prisma as any).apiCache.findUnique({ where: { endpoint: key } });
+    const messages: ChatMessage[] = cache?.data || [];
+    return messages;
   }
 }
 
