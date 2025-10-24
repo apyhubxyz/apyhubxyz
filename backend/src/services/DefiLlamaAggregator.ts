@@ -21,6 +21,7 @@ export interface DefiLlamaPool {
   stablecoin: boolean;
   ilRisk: string;
   exposure: string;
+  utilization?: number;
   predictions?: {
     predictedClass: string;
     predictedProbability: number;
