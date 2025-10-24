@@ -1,88 +1,102 @@
 import { Router, Request, Response } from 'express';
 import { getHyperSyncService } from '../services/EnvioHyperSyncService';
+import { realPositionFetcher } from '../services/RealPositionFetcher';
+import { multiPlatformAggregator } from '../services/MultiPlatformAggregator';
+import { defiLlamaAggregator } from '../services/DefiLlamaAggregator';
 
 const router = Router();
 
 /**
  * @route GET /api/positions
- * @description Get all LP positions across protocols
- * @query {string} userAddress - Optional user address to filter positions
- * @query {string} protocol - Optional protocol name filter
- * @query {number} chainId - Optional chain ID filter
- * @query {string} search - Optional search query
- * @query {string} sortBy - Sort field (tvl, apy, volume24h)
- * @query {string} sortOrder - Sort order (asc, desc)
+ * @description Get ALL available LP opportunities for discovery (Pools page)
+ * NOTE: For user's personal positions, use GET /api/dashboard/:address instead
+ * @query {string} protocol - Filter by protocol name
+ * @query {number} chainId - Filter by chain ID
+ * @query {string} search - Search query
+ * @query {string} sortBy - Sort field (apy, tvl)
+ * @query {number} minAPY - Minimum APY filter
+ * @query {number} minTVL - Minimum TVL filter
+ * @query {number} limit - Results limit (default 50)
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { 
-      userAddress, 
       protocol, 
       chainId, 
       search,
-      sortBy = 'tvl',
-      sortOrder = 'desc'
+      sortBy = 'apy',
+      sortOrder = 'desc',
+      minAPY,
+      minTVL,
+      limit,
     } = req.query;
 
-    let positions;
-
-    // Handle different query combinations
-  const hyperSyncService = getHyperSyncService();
-
-  if (search) {
-      // For search, we'll filter the positions after fetching
-      const allPositions = await hyperSyncService.queryPositions(userAddress as string);
+    // DISCOVERY MODE: Fetch ALL available LP opportunities from DefiLlama (1000+ protocols)
+    console.log(`🌐 [POOLS PAGE] Fetching ALL DeFi opportunities...`);
+    
+    const chainMap: Record<string, string> = {
+      '1': 'Ethereum',
+      '10': 'Optimism',
+      '137': 'Polygon',
+      '42161': 'Arbitrum',
+      '8453': 'Base',
+    };
+    
+    const pools = await defiLlamaAggregator.getTopPools({
+      minAPY: minAPY ? parseFloat(minAPY as string) : 5,
+      minTVL: minTVL ? parseFloat(minTVL as string) : 1000000,
+      chains: chainId ? [chainMap[chainId as string]] : ['Ethereum'],
+      protocols: protocol ? [protocol as string] : undefined,
+      limit: limit ? parseInt(limit as string) : 50,
+    });
+    
+    // Convert DefiLlama format to our position format
+    let positions = pools.map(p => ({
+      id: p.pool,
+      poolAddress: p.pool,
+      poolName: `${p.project} - ${p.symbol}`,
+      protocol: p.project,
+      chain: p.chain.toLowerCase(),
+      token0Symbol: p.symbol.split('-')[0] || p.symbol,
+      token1Symbol: p.symbol.split('-')[1] || '',
+      totalValueUSD: p.tvlUsd,
+      apy: p.apy,
+      apyBase: p.apyBase || 0,
+      apyReward: p.apyReward || 0,
+      fees24h: (p.tvlUsd * (p.apy / 100)) / 365,
+      impermanentLoss: p.ilRisk === 'yes' ? 10 : 0,
+      stablecoin: p.stablecoin,
+      exposure: p.exposure,
+      positionType: 'LP' as const,
+      lastUpdated: new Date(),
+    }));
+    
+    // Apply search filter
+    if (search) {
       const searchTerm = (search as string).toLowerCase();
-      positions = allPositions.filter(p =>
+      positions = positions.filter(p =>
         p.poolName.toLowerCase().includes(searchTerm) ||
         p.protocol.toLowerCase().includes(searchTerm) ||
         p.token0Symbol.toLowerCase().includes(searchTerm) ||
         p.token1Symbol.toLowerCase().includes(searchTerm)
       );
-    } else if (protocol) {
-      positions = await hyperSyncService.queryPositions(userAddress as string, protocol as string);
-    } else if (chainId) {
-      const chainMap: { [key: string]: string } = {
-        '1': 'ethereum',
-        '10': 'optimism',
-        '137': 'polygon',
-        '8453': 'base',
-        '42161': 'arbitrum',
-        '56': 'bsc'
-      };
-      positions = await hyperSyncService.queryPositions(userAddress as string, undefined, chainMap[chainId as string]);
-    } else {
-      positions = await hyperSyncService.queryPositions(userAddress as string);
     }
+    
+    console.log(`✅ [POOLS PAGE] Found ${positions.length} opportunities`)
 
-    // Apply sorting
-    const sortField = sortBy as 'tvl' | 'apy' | 'volume24h' | 'fees24h';
-    positions.sort((a, b) => {
-      let aVal = 0;
-      let bVal = 0;
-      
-      if (sortField === 'apy') {
-        aVal = a.apy;
-        bVal = b.apy;
-      } else if (sortField === 'tvl') {
-        aVal = a.totalValueUSD;
-        bVal = b.totalValueUSD;
-      } else if (sortField === 'volume24h' || sortField === 'fees24h') {
-        aVal = a.fees24h;
-        bVal = b.fees24h;
-      }
-      
-      if (sortOrder === 'asc') {
-        return aVal - bVal;
-      } else {
-        return bVal - aVal;
-      }
-    });
+    // Sorting already done by DefiLlama (by APY desc)
+    // But apply custom sort if requested
+    if (sortBy === 'tvl') {
+      positions.sort((a, b) => 
+        sortOrder === 'asc' ? a.totalValueUSD - b.totalValueUSD : b.totalValueUSD - a.totalValueUSD
+      );
+    }
 
     res.json({
       success: true,
       data: positions,
-      count: positions.length
+      count: positions.length,
+      message: 'All available LP opportunities for discovery'
     });
   } catch (error: any) {
     console.error('Error fetching positions:', error);

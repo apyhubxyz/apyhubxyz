@@ -630,3 +630,11 @@ export class PositionFetcher {
 // Export singleton instance
 export const positionFetcher = new PositionFetcher();
 export default positionFetcher;
+
+// Add main for testing
+if (require.main === module) {
+  (async () => {
+    const positions = await positionFetcher.fetchUserPositions('0x1234567890123456789012345678901234567890');
+    console.log('Fetched Positions:', positions);
+  })();
+}

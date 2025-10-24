@@ -6,38 +6,26 @@
 export const ENVIO_CONFIG = {
   // API Configuration
   apiKey: process.env.ENVIO_HYPERSYNC_API_KEY || '',
-  hyperIndexUrl: 'https://api.envio.dev/hypersync/v1',
+  hyperIndexUrl: 'https://api.envio.dev/hypersync/v1',  // Not used for mainnet RPC; kept for reference
   
-  // Networks to index
+  // Networks to index (switch to mainnet for real data)
   networks: [
+    // Comment out Sepolia for now
+    // {
+    //   id: 11155111,  // Sepolia
+    //   name: 'sepolia',
+    //   rpcUrl: process.env.SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',
+    //   startBlock: 1234567,
+    //   confirmations: 12,
+    // },
     {
-      id: 1,
+      id: 1,  // Ethereum Mainnet for real positions
       name: 'ethereum',
-      rpcUrl: process.env.ETH_RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo',
-      startBlock: 19000000, // Recent block for faster initial sync
+      rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/Qb1HjrRk7epyN-yl1MjjcZRx1r3CmSHj' || 'https://eth-mainnet.g.alchemy.com/v2/demo',  // Use your Infura/Alchemy key or public demo (limited)
+      startBlock: 19000000,  // Recent block to speed up
       confirmations: 12,
     },
-    {
-      id: 42161,
-      name: 'arbitrum',
-      rpcUrl: process.env.ARB_RPC_URL || 'https://arb-mainnet.g.alchemy.com/v2/demo',
-      startBlock: 150000000,
-      confirmations: 2,
-    },
-    {
-      id: 10,
-      name: 'optimism',
-      rpcUrl: process.env.OP_RPC_URL || 'https://opt-mainnet.g.alchemy.com/v2/demo',
-      startBlock: 110000000,
-      confirmations: 2,
-    },
-    {
-      id: 8453,
-      name: 'base',
-      rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-      startBlock: 8000000,
-      confirmations: 2,
-    }
+    // Add more mainnets as needed (e.g., Arbitrum id: 42161)
   ],
   
   // Protocols to index
