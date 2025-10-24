@@ -37,7 +37,7 @@
 - Page reloads with THEIR positions
 
 **What happens when they type address:**
-- Enter: `0xda3720e03d30acb8d52de68e34fa66c1e5a26849`
+- Enter: `0xYOUR_WALLET_ADDRESS_HERE`
 - Click Search
 - Shows: "Loading positions..." toast
 - Page loads with THAT wallet's positions

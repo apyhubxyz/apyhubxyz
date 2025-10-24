@@ -97,7 +97,7 @@ Expected: Top 3 pools with >20% APY from 1000+ protocols
 
 ### Test 3: Personal Dashboard - Get User's All Positions ⭐
 ```bash
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"
 ```
 Expected: 158 positions across 59 protocols
 
@@ -234,7 +234,7 @@ After setup, verify:
 
 - [ ] Backend running: `curl http://localhost:3001/api/health`
 - [ ] Discovery works: `curl "http://localhost:3001/api/positions?limit=1"`
-- [ ] Dashboard works: `curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"`
+- [ ] Dashboard works: `curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"`
 - [ ] Frontend loads: Open http://localhost:3000
 - [ ] Pools page shows data: http://localhost:3000/pools
 - [ ] Portfolio works: http://localhost:3000/portfolio

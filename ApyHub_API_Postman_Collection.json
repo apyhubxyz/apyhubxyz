@@ -116,7 +116,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["dashboard", "{{userAddress}}"]
             },
-            "description": "⭐ PRIMARY ENDPOINT: Fetches all user positions across 800+ protocols\n\nTest Address: 0xda3720e03d30acb8d52de68e34fa66c1e5a26849\nResult: 158 positions across 59 protocols"
+            "description": "⭐ PRIMARY ENDPOINT: Fetches all user positions across 800+ protocols\n\nTest Address: 0xYOUR_WALLET_ADDRESS_HERE\nResult: 158 positions across 59 protocols"
           }
         },
         {
@@ -210,7 +210,7 @@
     },
     {
       "key": "userAddress",
-      "value": "0xda3720e03d30acb8d52de68e34fa66c1e5a26849",
+      "value": "0xYOUR_WALLET_ADDRESS_HERE",
       "type": "string"
     }
   ]

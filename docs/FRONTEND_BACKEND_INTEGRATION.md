@@ -63,7 +63,7 @@ const { data } = useQuery({
 
 ### Backend Endpoint
 ```
-GET /api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849
+GET /api/dashboard/0xYOUR_WALLET_ADDRESS_HERE
 ```
 
 ### Response (YOUR REAL POSITIONS)
@@ -71,7 +71,7 @@ GET /api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849
 {
   "success": true,
   "data": {
-    "address": "0xda3720e03d30acb8d52de68e34fa66c1e5a26849",
+    "address": "0xYOUR_WALLET_ADDRESS_HERE",
     "positions": [
       {
         "id": "uniswap-v3-264195",

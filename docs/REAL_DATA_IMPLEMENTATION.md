@@ -220,7 +220,7 @@ curl "http://localhost:3001/api/positions?minAPY=10"
 
 ```bash
 # Your positions (real blockchain)
-curl "http://localhost:3001/api/positions?userAddress=0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/positions?userAddress=0xYOUR_WALLET_ADDRESS_HERE"
 
 # All opportunities (platform aggregation)
 curl "http://localhost:3001/api/positions"

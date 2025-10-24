@@ -18,7 +18,7 @@ GET /api/dashboard/:address
 
 **Test**:
 ```bash
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"
 ```
 
 **Returns**:
@@ -106,7 +106,7 @@ curl http://localhost:3001/api/health
 curl "http://localhost:3001/api/positions?minAPY=20&limit=3" | jq '.data[0]'
 
 # 3. Get user positions (MAIN FEATURE!)
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849" | jq '{positions: .data.stats.totalPositions, value: .data.stats.totalValueUSD, protocols: (.data.stats.byProtocol | length)}'
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE" | jq '{positions: .data.stats.totalPositions, value: .data.stats.totalValueUSD, protocols: (.data.stats.byProtocol | length)}'
 ```
 
 ---

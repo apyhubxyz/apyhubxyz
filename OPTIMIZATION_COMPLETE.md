@@ -79,7 +79,7 @@ curl "http://localhost:3001/api/positions?minAPY=25&limit=3"
 ✅ Returns: Uniswap WETH-ADO (498% APY, $3.1M TVL)
 
 # Dashboard endpoint (personal)
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"
 ✅ Returns: 1 position ($174.37 value, 20.74% APY)
 ```
 
