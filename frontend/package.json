@@ -48,6 +48,9 @@
     "@walletconnect/sign-client": "^2.22.2",
     "@walletconnect/universal-provider": "^2.22.2",
     "@walletconnect/ethereum-provider": "^2.22.4",
-    "@paulmillr/qr": "npm:qr@^0.4.1"
+    "@paulmillr/qr": "npm:qr@^0.4.1",
+    "ws": "^8.18.3",
+    "bufferutil": "^4.0.9",
+    "utf-8-validate": "^5.0.10"
   }
 }
