@@ -29,7 +29,7 @@ Users can type ANY Ethereum address to view its positions
 User Flow:
 1. Visit http://localhost:3003/portfolio
 2. See input box: "Enter Any Ethereum Address"
-3. Type: 0xda3720e03d30acb8d52de68e34fa66c1e5a26849
+3. Type: 0xYOUR_WALLET_ADDRESS_HERE
 4. Click "Search" button
 5. Dashboard loads with THAT wallet's positions!
 ```
@@ -117,7 +117,7 @@ Direct Blockchain (Uniswap V3 + Aave V3)
 
 ### Test 1: With Your Address
 ```bash
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"
 ```
 
 **Result**:
@@ -135,7 +135,7 @@ Visit: http://localhost:3003/portfolio
 3. Shows YOUR positions
 
 **Scenario B - Manual Address**:
-1. Enter: `0xda3720e03d30acb8d52de68e34fa66c1e5a26849`
+1. Enter: `0xYOUR_WALLET_ADDRESS_HERE`
 2. Click "Search"
 3. Shows that wallet's 158 positions!
 

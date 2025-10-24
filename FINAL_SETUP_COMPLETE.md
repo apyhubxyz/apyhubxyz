@@ -73,7 +73,7 @@ curl "http://localhost:3001/api/positions?minAPY=30&limit=2"
 
 ### Dashboard Endpoint (Your Positions)
 ```bash
-curl "http://localhost:3001/api/dashboard/0xda3720e03d30acb8d52de68e34fa66c1e5a26849"
+curl "http://localhost:3001/api/dashboard/0xYOUR_WALLET_ADDRESS_HERE"
 ```
 **Result**:
 - ✅ 1 position found

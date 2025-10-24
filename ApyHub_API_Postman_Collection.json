@@ -1,0 +1,218 @@
+{
+  "info": {
+    "name": "ApyHub Backend API",
+    "description": "Complete API collection for ApyHub - DeFi Yield Aggregator\n\nBase URL: http://localhost:3001/api\nProduction: https://api.apyhub.xyz/api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check if all services are operational"
+          }
+        },
+        {
+          "name": "API Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Get list of all available endpoints"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Discovery (Pools Page)",
+      "item": [
+        {
+          "name": "Get All LP Opportunities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/positions?minAPY=10&minTVL=1000000&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions"],
+              "query": [
+                {"key": "minAPY", "value": "10"},
+                {"key": "minTVL", "value": "1000000"},
+                {"key": "limit", "value": "50"}
+              ]
+            },
+            "description": "Fetch 1000+ protocol opportunities for Pools page"
+          }
+        },
+        {
+          "name": "Get High-Yield Opportunities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/positions?minAPY=50&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions"],
+              "query": [
+                {"key": "minAPY", "value": "50"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter by Protocol",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/positions?protocol=pendle&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions"],
+              "query": [
+                {"key": "protocol", "value": "pendle"},
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Position Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/positions/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["positions", "stats"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard (Personal Positions)",
+      "item": [
+        {
+          "name": "Get User Positions (Main Endpoint)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/{{userAddress}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "{{userAddress}}"]
+            },
+            "description": "⭐ PRIMARY ENDPOINT: Fetches all user positions across 800+ protocols\n\nTest Address: 0xYOUR_WALLET_ADDRESS_HERE\nResult: 158 positions across 59 protocols"
+          }
+        },
+        {
+          "name": "Get Portfolio Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/{{userAddress}}/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "{{userAddress}}", "summary"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pools",
+      "item": [
+        {
+          "name": "List All Pools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pools?minAPY=5&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["pools"],
+              "query": [
+                {"key": "minAPY", "value": "5"},
+                {"key": "limit", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Pool by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pools/0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+              "host": ["{{baseUrl}}"],
+              "path": ["pools", "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640"]
+            }
+          }
+        },
+        {
+          "name": "Search Pools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pools/search/USDC",
+              "host": ["{{baseUrl}}"],
+              "path": ["pools", "search", "USDC"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Agent",
+      "item": [
+        {
+          "name": "AI Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\"role\": \"user\", \"content\": \"What's the best yield strategy for stablecoins?\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai", "chat"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    {
+      "key": "userAddress",
+      "value": "0xYOUR_WALLET_ADDRESS_HERE",
+      "type": "string"
+    }
+  ]
+}
+
