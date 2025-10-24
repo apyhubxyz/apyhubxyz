@@ -1,7 +1,10 @@
 // frontend/lib/enhancedApi.ts
+// ⚠️ WARNING: V2 API ENDPOINTS ARE NOT YET AVAILABLE
+// These endpoints are currently being optimized and will be available in the next major release
+// For now, use the standard API from './api.ts' for all functionality
 import axios, { AxiosInstance } from 'axios';
 
-// Enhanced API Configuration for V2 endpoints
+// Enhanced API Configuration for V2 endpoints (COMING SOON)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Create axios instance for V2 API
