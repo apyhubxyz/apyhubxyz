@@ -1,0 +1,12 @@
+[
+  {
+    "profile": "conservative",
+    "max_risk": "low",
+    "min_apy": 5.0
+  },
+  {
+    "profile": "aggressive",
+    "max_risk": "high",
+    "min_apy": 20.0
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "strategy": "BOLD Looping",
+    "protocol": "Liquity V2",
+    "expected_apy": 21.0,
+    "risk": "medium"
+  },
+  {
+    "strategy": "Stablecoin LP",
+    "protocol": "Uniswap V3",
+    "expected_apy": 12.0,
+    "risk": "low"
+  }
+]

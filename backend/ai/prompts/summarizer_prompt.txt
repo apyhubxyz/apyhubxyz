@@ -1,0 +1,3 @@
+Summarize the following DeFi positions: {positions}
+Include total value, average APY, risk level, and key insights.
+Keep it under 200 words.
