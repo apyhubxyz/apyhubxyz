@@ -50,33 +50,56 @@ router.get('/', async (req: Request, res: Response) => {
       limit: limit ? parseInt(limit as string) : 50,
     });
     
-    // Convert DefiLlama format to our position format
+    // Convert DefiLlama format to Pool-compatible format for frontend
     let positions = pools.map(p => ({
       id: p.pool,
+      name: `${p.project} ${p.symbol}`,
+      asset: p.symbol.split('-')[0] || p.symbol,
+      assetAddress: undefined,
       poolAddress: p.pool,
+      poolType: 'double' as const,
+      isLoopable: false,
+      supplyAPY: p.apyBase || p.apy,
+      borrowAPY: undefined,
+      rewardAPY: p.apyReward || 0,
+      totalAPY: p.apy,
+      tvl: p.tvlUsd,
+      availableLiquidity: p.tvlUsd * (1 - (p.utilization || 0) / 100),
+      utilizationRate: p.utilization,
+      riskLevel: p.stablecoin ? 'low' as const : (p.ilRisk === 'yes' ? 'high' as const : 'medium' as const),
+      riskScore: p.ilRisk === 'yes' ? 70 : (p.stablecoin ? 20 : 40),
+      minDeposit: undefined,
+      lockPeriod: undefined,
+      active: true,
+      verified: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      protocol: {
+        id: p.project.toLowerCase().replace(/\s+/g, '-'),
+        name: p.project,
+        slug: p.project.toLowerCase().replace(/\s+/g, '-'),
+        logo: undefined,
+        chain: p.chain,
+        audited: false,
+        website: undefined,
+      },
+      // Keep original fields for backward compatibility
       poolName: `${p.project} - ${p.symbol}`,
-      protocol: p.project,
-      chain: p.chain.toLowerCase(),
       token0Symbol: p.symbol.split('-')[0] || p.symbol,
       token1Symbol: p.symbol.split('-')[1] || '',
-      totalValueUSD: p.tvlUsd,
-      apy: p.apy,
-      apyBase: p.apyBase || 0,
-      apyReward: p.apyReward || 0,
       fees24h: (p.tvlUsd * (p.apy / 100)) / 365,
       impermanentLoss: p.ilRisk === 'yes' ? 10 : 0,
       stablecoin: p.stablecoin,
       exposure: p.exposure,
-      positionType: 'LP' as const,
-      lastUpdated: new Date(),
     }));
     
     // Apply search filter
     if (search) {
       const searchTerm = (search as string).toLowerCase();
       positions = positions.filter(p =>
-        p.poolName.toLowerCase().includes(searchTerm) ||
-        p.protocol.toLowerCase().includes(searchTerm) ||
+        p.name.toLowerCase().includes(searchTerm) ||
+        p.asset.toLowerCase().includes(searchTerm) ||
+        p.protocol.name.toLowerCase().includes(searchTerm) ||
         p.token0Symbol.toLowerCase().includes(searchTerm) ||
         p.token1Symbol.toLowerCase().includes(searchTerm)
       );
@@ -87,8 +110,12 @@ router.get('/', async (req: Request, res: Response) => {
     // Sorting already done by DefiLlama (by APY desc)
     // But apply custom sort if requested
     if (sortBy === 'tvl') {
-      positions.sort((a, b) => 
-        sortOrder === 'asc' ? a.totalValueUSD - b.totalValueUSD : b.totalValueUSD - a.totalValueUSD
+      positions.sort((a, b) =>
+        sortOrder === 'asc' ? a.tvl - b.tvl : b.tvl - a.tvl
+      );
+    } else if (sortBy === 'apy') {
+      positions.sort((a, b) =>
+        sortOrder === 'asc' ? a.totalAPY - b.totalAPY : b.totalAPY - a.totalAPY
       );
     }
 

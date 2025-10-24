@@ -132,7 +132,7 @@ export default function PoolsPage() {
               </div>
               <div className="text-3xl font-bold text-brown-900 dark:text-brown-100">
                 {data && data.length > 0
-                  ? (data.reduce((sum: number, p: any) => sum + p.totalAPY, 0) / data.length).toFixed(1)
+                  ? (data.reduce((sum: number, p: any) => sum + (p.totalAPY || 0), 0) / data.length).toFixed(1)
                   : '0.0'}%
               </div>
               <div className="text-xs text-brown-600 dark:text-brown-400 mt-1">Across all pools</div>
@@ -151,7 +151,7 @@ export default function PoolsPage() {
               </div>
               <div className="text-3xl font-bold text-brown-900 dark:text-brown-100">
                 {data && data.length > 0
-                  ? `$${(data.reduce((sum: number, p: any) => sum + p.tvl, 0) / 1e9).toFixed(1)}B`
+                  ? `$${(data.reduce((sum: number, p: any) => sum + (p.tvl || 0), 0) / 1e9).toFixed(1)}B`
                   : '$0'}
               </div>
               <div className="text-xs text-brown-600 dark:text-brown-400 mt-1">Total value secured</div>

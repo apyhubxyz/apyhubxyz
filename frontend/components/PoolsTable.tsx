@@ -136,7 +136,7 @@ export default function PoolsTable({ pools, loading, sortBy, sortOrder, onSort }
                         {pool.name}
                       </div>
                       <div className="text-sm text-brown-600 dark:text-brown-400 flex items-center gap-1">
-                        {pool.protocol?.name}
+                        {pool.protocol?.name || 'Unknown Protocol'}
                         {pool.verified && (
                           <ShieldCheckIcon className="w-4 h-4 text-blue-500" title="Verified" />
                         )}
@@ -147,9 +147,11 @@ export default function PoolsTable({ pools, loading, sortBy, sortOrder, onSort }
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-brown-900 dark:text-brown-100">{pool.asset}</span>
-                    <span className="text-xs text-brown-500 dark:text-brown-400 uppercase bg-brown-100 dark:bg-brown-800 px-2 py-0.5 rounded">
-                      {pool.protocol?.chain}
-                    </span>
+                    {pool.protocol?.chain && (
+                      <span className="text-xs text-brown-500 dark:text-brown-400 uppercase bg-brown-100 dark:bg-brown-800 px-2 py-0.5 rounded">
+                        {pool.protocol.chain}
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4">
