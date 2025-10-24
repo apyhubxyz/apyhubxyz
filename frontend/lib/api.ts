@@ -233,6 +233,41 @@ export const apiClient = {
     },
   },
 
+  // NEW: LP Opportunities (Pools Page - Discovery Mode)
+  positions: {
+    /**
+     * Get ALL available LP opportunities across 1000+ protocols
+     * Use this for Pools page (no wallet required)
+     */
+    getAllOpportunities: async (filters?: {
+      protocol?: string;
+      chainId?: number;
+      minAPY?: number;
+      minTVL?: number;
+      search?: string;
+      limit?: number;
+    }): Promise<any> => {
+      return api.get('/positions', { params: filters });
+    },
+    getStats: async (): Promise<any> => {
+      return api.get('/positions/stats');
+    },
+  },
+
+  // NEW: Dashboard (Personal Positions After Wallet Connect)
+  dashboard: {
+    /**
+     * Get YOUR actual positions from blockchain
+     * Use this for Dashboard/Portfolio page (requires wallet address)
+     */
+    getMyPositions: async (address: string): Promise<any> => {
+      return api.get(`/dashboard/${address}`);
+    },
+    getSummary: async (address: string): Promise<any> => {
+      return api.get(`/dashboard/${address}/summary`);
+    },
+  },
+
   // Health
   health: async (): Promise<any> => {
     return api.get('/health');

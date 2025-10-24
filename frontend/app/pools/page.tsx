@@ -30,19 +30,21 @@ export default function PoolsPage() {
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Fetch pools with filters
+  // Fetch ALL LP opportunities (discovery mode) - REAL data from 1000+ protocols
   const { data: poolsResponse, isLoading, error } = useQuery({
-    queryKey: ['pools', filters, debouncedSearch],
+    queryKey: ['all-opportunities', filters, debouncedSearch],
     queryFn: async () => {
-      if (debouncedSearch) {
-        const searchResult = await apiClient.pools.search(debouncedSearch)
-        return searchResult || []
-      }
-      const result = await apiClient.pools.list(filters)
-      return result.pools || []
+      // Use NEW positions endpoint for discovery
+      const result = await apiClient.positions.getAllOpportunities({
+        minAPY: filters.minAPY,
+        minTVL: 1000000,  // $1M minimum
+        search: debouncedSearch || undefined,
+        limit: filters.limit || 50,
+      })
+      return result.data || []
     },
     refetchOnWindowFocus: false,
-    staleTime: 60000, // 1 minute
+    staleTime: 300000, // 5 minutes (data is cached on backend)
   })
 
   // Ensure data is always an array
