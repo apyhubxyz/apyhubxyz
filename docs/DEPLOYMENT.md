@@ -13,7 +13,7 @@ This project ships with a production-ready Docker Compose profile and an Nginx r
 Copy the example and edit values:
 
 ```bash
-cp .env.production.example .env
+cp .env.example .env
 ```
 
 Recommended production values:
