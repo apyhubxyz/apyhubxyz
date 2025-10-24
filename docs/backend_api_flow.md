@@ -355,3 +355,21 @@ ws://localhost:3001/ws
 - [Avail Nexus SDK](https://docs.availproject.org)
 - [Anthropic Claude API](https://docs.anthropic.com)
 - [ApyHub Frontend Docs](./frontend_architecture.md)
+
+## Updated API Flow
+1. User requests data via frontend.
+2. Backend routes handle request.
+3. Fetch from Envio or cache.
+4. AI processes if needed.
+5. Return response.
+
+```mermaid
+graph TD
+    Envio[Envio Hypersync] -->|fetchPositions.ts| Pools[/api/pools]
+    Envio --> Portfolio[/api/portfolio]
+    Portfolio --> Avail[Avail Bridge] --> Liquidity[cross-chain liquidity]
+    Portfolio --> PYUSD[PayPal PYUSD]
+    Portfolio --> AI[AI Agent]
+    AI --> Prompt[advisor_prompt.txt]
+    AI --> Strategy[strategy.ts]
+```
