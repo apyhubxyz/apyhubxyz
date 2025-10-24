@@ -14,6 +14,7 @@ import { portfolioRoutes } from './routes/portfolio';
 import { aiRoutes } from './routes/ai';
 import { envioRoutes } from './routes/envio';
 import positionsRoutes from './routes/positions';
+import dashboardRoutes from './routes/dashboard';
 // import { DeFiService } from './services/DeFiService';
 import PrismaService from './services/PrismaService';
 // import { enhancedApyRoutes } from './routes/enhanced-apy';
@@ -111,12 +112,14 @@ app.get('/', (req, res) => {
     endpoints: {
     health: 'GET /api/health',
     positions: {
-      list: 'GET /api/positions?protocol=Aave&chainId=1&sortBy=tvl',
+      list: 'GET /api/positions?protocol=Aave&minAPY=10 (ALL opportunities - Pools page)',
       stats: 'GET /api/positions/stats',
       protocols: 'GET /api/positions/protocols',
       chains: 'GET /api/positions/chains',
-      sync: 'POST /api/positions/sync',
-      websocket: 'GET /api/positions/ws',
+    },
+    dashboard: {
+      myPositions: 'GET /api/dashboard/:address (YOUR positions - Dashboard)',
+      summary: 'GET /api/dashboard/:address/summary (Quick stats)',
     },
     protocols: {
       list: 'GET /api/protocols',
@@ -216,7 +219,8 @@ app.use('/api/pools', poolsRoutes);
 app.use('/api/portfolio', portfolioRoutes(provider));
 app.use('/api/ai', aiRoutes(provider));
 app.use('/api/envio', envioRoutes());
-app.use('/api/positions', positionsRoutes);
+app.use('/api/positions', positionsRoutes);  // For Pools page (discovery)
+app.use('/api/dashboard', dashboardRoutes);  // For Dashboard (personal positions)
 
 // Enhanced V2 routes - 50+ protocol support (disabled temporarily)
 // app.use('/api/v2/apy', enhancedApyRoutes);

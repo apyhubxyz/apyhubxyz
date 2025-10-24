@@ -1,0 +1,7 @@
+model: claude-3-opus-20240229
+provider: anthropic
+temperature: 0.7
+max_tokens: 1000
+fallback_model: gpt-4
+cache_ttl: 3600
+knowledge_base: yield_strategies.json

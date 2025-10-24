@@ -1,10 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
-import { ArrowLeftIcon, ArrowTrendingUpIcon, WalletIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowTrendingUpIcon, WalletIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import apiClient from '@/lib/api'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -12,17 +13,73 @@ import toast from 'react-hot-toast'
 import { GemIcon, RewardIcon, ChartIcon, SeedIcon } from '@/components/CustomIcons'
 
 export default function PortfolioPage() {
-  const { address, isConnected } = useAccount()
+  const { address: connectedAddress, isConnected } = useAccount()
+  const [manualAddress, setManualAddress] = useState('')
+  const [searchAddress, setSearchAddress] = useState('')
+  
+  // Use connected wallet OR manual input (prioritize connected)
+  const activeAddress = isConnected ? connectedAddress : searchAddress
+  
+  const handleAddressSearch = () => {
+    if (!manualAddress) {
+      toast.error('Please enter a valid Ethereum address')
+      return
+    }
+    if (!manualAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+      toast.error('Invalid Ethereum address format')
+      return
+    }
+    setSearchAddress(manualAddress)
+    toast.success('Loading positions...')
+  }
 
-  const { data: portfolioResponse, isLoading, error } = useQuery({
-    queryKey: ['portfolio', address],
-    queryFn: () => apiClient.portfolio.get(address!),
-    enabled: !!address && isConnected,
+  // Fetch YOUR actual positions from blockchain (NEW dashboard endpoint)
+  // Works with connected wallet OR manual address input
+  const { data: dashboardResponse, isLoading, error, refetch } = useQuery({
+    queryKey: ['dashboard', activeAddress],
+    queryFn: () => apiClient.dashboard.getMyPositions(activeAddress!),
+    enabled: !!activeAddress,  // Enabled when wallet connected OR address entered
     refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
   })
 
-  // Extract data from response - handle both direct data and axios response
-  const portfolio = (portfolioResponse as any)?.data || portfolioResponse
+  // Extract data from response
+  const dashboardData = (dashboardResponse as any)?.data || dashboardResponse
+  
+  // Convert to portfolio format for existing UI
+  const portfolio = dashboardData ? {
+    user: {
+      walletAddress: activeAddress,
+      ens: undefined,
+    },
+    portfolio: {
+      totalValue: dashboardData.stats?.totalValueUSD || 0,
+      totalEarnings: dashboardData.stats?.totalFees24h || 0,
+      weightedAPY: dashboardData.stats?.avgAPY || 0,
+      positionCount: dashboardData.stats?.totalPositions || 0,
+    },
+    positions: (dashboardData.positions || []).map((p: any) => ({
+      id: p.id,
+      pool: {
+        id: p.poolAddress,
+        name: p.poolName,
+        asset: p.token0Symbol,
+        poolAddress: p.poolAddress,
+        protocol: {
+          name: p.protocol,
+          chain: p.chain,
+        },
+      },
+      amount: p.token0Amount,
+      amountUSD: p.totalValueUSD,
+      entryAPY: p.apy,
+      currentAPY: p.apy,
+      earnings: (p.fees24h * 30).toString(),  // Estimate monthly
+      earningsUSD: p.fees24h * 30,
+      startDate: p.lastUpdated,
+      lastUpdated: p.lastUpdated,
+    })),
+  } : null
 
   if (error) {
     toast.error('Failed to load portfolio')
@@ -67,20 +124,57 @@ export default function PortfolioPage() {
           </p>
         </div>
 
-        {/* Wallet Connection - Beautiful Call to Action */}
-        {!isConnected ? (
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-brown-500 to-purple-500 rounded-3xl blur-xl opacity-60 group-hover:opacity-80 transition-all duration-500"></div>
-            <div className="relative glass-dark rounded-3xl p-12 text-center backdrop-blur-sm border border-brown-200 dark:border-brown-700">
-              <WalletIcon className="w-20 h-20 mx-auto mb-6 text-brown-700 dark:text-brown-200 animate-float" />
-              <h2 className="text-3xl font-bold text-brown-900 dark:text-brown-100 mb-4">
-                Welcome to Your Personal Dashboard
-              </h2>
-              <p className="text-brown-700 dark:text-brown-300 mb-8 max-w-md mx-auto leading-relaxed">
-                Connect your wallet to unlock portfolio insights, track your positions, and discover new opportunities tailored just for you.
-              </p>
-              <div className="flex justify-center">
-                <ConnectButton />
+        {/* Wallet Connection OR Address Input */}
+        {!activeAddress ? (
+          <div className="space-y-6">
+            {/* Wallet Connection Option */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-brown-500 to-purple-500 rounded-3xl blur-xl opacity-60 group-hover:opacity-80 transition-all duration-500"></div>
+              <div className="relative glass-dark rounded-3xl p-12 text-center backdrop-blur-sm border border-brown-200 dark:border-brown-700">
+                <WalletIcon className="w-20 h-20 mx-auto mb-6 text-brown-700 dark:text-brown-200 animate-float" />
+                <h2 className="text-3xl font-bold text-brown-900 dark:text-brown-100 mb-4">
+                  Welcome to Your Personal Dashboard
+                </h2>
+                <p className="text-brown-700 dark:text-brown-300 mb-8 max-w-md mx-auto leading-relaxed">
+                  Connect your wallet to unlock portfolio insights, track your positions, and discover new opportunities.
+                </p>
+                <div className="flex justify-center mb-6">
+                  <ConnectButton />
+                </div>
+                
+                {/* Divider */}
+                <div className="flex items-center gap-4 my-8 max-w-md mx-auto">
+                  <div className="flex-1 h-px bg-brown-300 dark:bg-brown-600"></div>
+                  <span className="text-sm text-brown-600 dark:text-brown-400 font-medium">OR</span>
+                  <div className="flex-1 h-px bg-brown-300 dark:bg-brown-600"></div>
+                </div>
+                
+                {/* Manual Address Input */}
+                <div className="max-w-lg mx-auto">
+                  <label className="block text-left text-sm font-medium text-brown-700 dark:text-brown-300 mb-2">
+                    Enter Your Address
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="0x..."
+                      value={manualAddress}
+                      onChange={(e) => setManualAddress(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddressSearch()}
+                      className="flex-1 px-4 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent text-brown-900 dark:text-brown-100 placeholder-brown-400 dark:placeholder-brown-500 transition-all"
+                    />
+                    <button
+                      onClick={handleAddressSearch}
+                      className="px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                    >
+                      <MagnifyingGlassIcon className="w-5 h-5" />
+                      Search
+                    </button>
+                  </div>
+                  <p className="text-xs text-brown-500 dark:text-brown-400 mt-2 text-left">
+                    View your DeFi positions across 800+ protocols
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -99,11 +193,24 @@ export default function PortfolioPage() {
               <SeedIcon className="w-12 h-12 text-brown-700 dark:text-brown-200" />
             </div>
             <h3 className="text-2xl font-bold text-brown-900 dark:text-brown-100 mb-4">
-              Your Journey Starts Here
+              No Positions Found
             </h3>
             <p className="text-brown-700 dark:text-brown-300 mb-8 max-w-md mx-auto">
-              You haven&apos;t added any positions yet. Dive into our curated pool selection and start earning today!
+              {isConnected 
+                ? "You don't have any DeFi positions yet. Start exploring yield opportunities!"
+                : "This address has no DeFi positions. Try a different address or connect your wallet."}
             </p>
+            {!isConnected && (
+              <button
+                onClick={() => {
+                  setSearchAddress('')
+                  setManualAddress('')
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl font-medium hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-all duration-300 text-brown-700 dark:text-brown-300 mb-4"
+              >
+                ← Try Another Address
+              </button>
+            )}
             <Link
               href="/pools"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300"
@@ -129,7 +236,9 @@ export default function PortfolioPage() {
                   <div className="text-3xl font-bold text-brown-900 dark:text-brown-100">
                     {formatCurrency(portfolio.portfolio.totalValue)}
                   </div>
-                  <div className="text-xs text-brown-600 dark:text-brown-400 mt-1">Total assets under management</div>
+                  <div className="text-xs text-brown-600 dark:text-brown-400 mt-1">
+                    Across {Object.keys(dashboardData?.stats?.byProtocol || {}).length} protocols
+                  </div>
                 </div>
               </div>
 
@@ -168,14 +277,34 @@ export default function PortfolioPage() {
               </div>
             </div>
 
-            {/* Wallet Info */}
+            {/* Wallet Info with Data Source */}
             <div className="glass-dark rounded-2xl p-6 border border-brown-200 dark:border-brown-700 mb-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <div className="text-sm text-brown-600 dark:text-brown-400 mb-1 font-medium">Connected Account</div>
-                  <div className="font-mono text-lg font-semibold text-brown-900 dark:text-brown-100">
-                    {portfolio.user.ens || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="text-sm text-brown-600 dark:text-brown-400 font-medium">
+                      {isConnected ? 'Connected Wallet' : 'Viewing Address'}
+                    </div>
+                    {dashboardData?.meta?.dataSource && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-medium">
+                        via {dashboardData.meta.dataSource}
+                      </span>
+                    )}
                   </div>
+                  <div className="font-mono text-lg font-semibold text-brown-900 dark:text-brown-100">
+                    {portfolio.user.ens || `${activeAddress?.slice(0, 8)}...${activeAddress?.slice(-6)}`}
+                  </div>
+                  {!isConnected && searchAddress && (
+                    <button
+                      onClick={() => {
+                        setSearchAddress('')
+                        setManualAddress('')
+                      }}
+                      className="text-sm text-purple-600 dark:text-purple-400 hover:underline mt-2"
+                    >
+                      ← Search different address
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
@@ -184,7 +313,7 @@ export default function PortfolioPage() {
                       {portfolio.portfolio.positionCount}
                     </div>
                   </div>
-                  <ConnectButton />
+                  {isConnected && <ConnectButton />}
                 </div>
               </div>
             </div>
