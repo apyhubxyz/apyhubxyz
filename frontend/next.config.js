@@ -3,8 +3,15 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   images: {
-    domains: ['localhost', 'apyhub.xyz'],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'apyhub.xyz',
+      },
       {
         protocol: 'https',
         hostname: '**',
