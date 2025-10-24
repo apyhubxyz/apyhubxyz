@@ -1,6 +1,9 @@
 // backend/src/services/PortfolioService.ts
 import { prisma } from './PrismaService';
 import { ethers } from 'ethers';
+import { zapperGraphQLFetcher } from './ZapperGraphQLFetcher';
+import { deBankPositionFetcher } from './DeBankPositionFetcher';
+import { realPositionFetcher } from './RealPositionFetcher';
 
 export class PortfolioService {
   private provider: ethers.Provider;
@@ -29,15 +32,45 @@ export class PortfolioService {
   }
 
   /**
-   * Get user's portfolio with all positions
+   * Get user's portfolio with all positions (fetched from Zapper/DeBank/Blockchain)
    */
   async getUserPortfolio(walletAddress: string) {
     const user = await this.getOrCreateUser(walletAddress);
-    // No userPosition model in current schema; return empty portfolio summary
+    
+    // Fetch real positions using multi-tier fallback strategy
+    let positions: any[] = [];
+    
+    try {
+      // Try DeBank first (free, comprehensive)
+      positions = await deBankPositionFetcher.fetchAllPositions(walletAddress);
+      if (positions.length === 0) throw new Error('DeBank empty');
+    } catch (debankError) {
+      try {
+        // Fallback to Zapper GraphQL (with key, very comprehensive)
+        positions = await zapperGraphQLFetcher.fetchAllPositions(walletAddress);
+        if (positions.length === 0) throw new Error('Zapper empty');
+      } catch (zapperError) {
+        // Final fallback: Direct blockchain queries (limited coverage)
+        positions = await realPositionFetcher.fetchAllPositions(walletAddress);
+      }
+    }
+    
+    // Calculate portfolio stats
+    const totalValue = positions.reduce((sum, p) => sum + (p.totalValueUSD || 0), 0);
+    const totalEarnings = positions.reduce((sum, p) => sum + (p.fees24h || 0), 0);
+    const weightedAPY = positions.length > 0
+      ? positions.reduce((sum, p) => sum + (p.apy || 0), 0) / positions.length
+      : 0;
+    
     return {
       user: { walletAddress: user.address, ens: null },
-      portfolio: { totalValue: 0, totalEarnings: 0, weightedAPY: 0, positionCount: 0 },
-      positions: [] as any[],
+      portfolio: {
+        totalValue,
+        totalEarnings,
+        weightedAPY,
+        positionCount: positions.length
+      },
+      positions,
     };
   }
 
