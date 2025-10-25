@@ -222,8 +222,10 @@ app.use('/api/envio', envioRoutes());
 app.use('/api/positions', positionsRoutes);  // For Pools page (discovery)
 app.use('/api/dashboard', dashboardRoutes);  // For Dashboard (personal positions)
 
-// Enhanced V2 routes - 50+ protocol support (disabled temporarily)
-// app.use('/api/v2/apy', enhancedApyRoutes);
+// Enhanced V2 routes - 50+ protocol support (COMING SOON)
+// Note: These routes require EnhancedDeFiService which is currently being optimized
+// ETA: Available in next major release
+// app.use('/api/v2/apy', enhancedApyRoutes(provider));
 // app.use('/api/v2/ai', enhancedAIRoutes);
 
 // Legacy APY routes removed (Envio-only)

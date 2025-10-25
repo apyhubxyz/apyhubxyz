@@ -166,7 +166,7 @@ const APYShowcase = () => {
           )}
         </div>
 
-        {/* Live data indicator - looks cool but need actual websocket connection */}
+        {/* Data refresh indicator */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -174,9 +174,9 @@ const APYShowcase = () => {
           viewport={{ once: true }}
           className="flex justify-center items-center space-x-2"
         >
-          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
           <span className="text-sm text-brown-600 dark:text-brown-300">
-            Live data • Updated every 30 seconds
+            Data refreshes every 30 seconds
           </span>
         </motion.div>
       </div>

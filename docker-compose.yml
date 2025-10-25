@@ -3,7 +3,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: apyhub-redis
-    restart: unless-stopped
+    restart: always
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
@@ -21,7 +21,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: apyhub-postgres
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     environment:
@@ -46,7 +46,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: apyhub-backend
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     ports:
@@ -85,11 +85,11 @@ services:
         NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://backend:3001}
         NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID:-}
     container_name: apyhub-frontend
-    restart: unless-stopped
+    restart: always
     env_file:
       - .env
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "${FRONTEND_PORT:-3002}:3002"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
@@ -104,7 +104,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: apyhub-nginx
-    restart: unless-stopped
+    restart: always
     ports:
       - "8080:80"
       - "8443:443"
@@ -128,3 +128,4 @@ volumes:
 networks:
   apyhub-network:
     driver: bridge
+    name: apyhub-network

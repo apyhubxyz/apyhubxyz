@@ -59,25 +59,25 @@ export default function PortfolioPage() {
       positionCount: dashboardData.stats?.totalPositions || 0,
     },
     positions: (dashboardData.positions || []).map((p: any) => ({
-      id: p.id,
+      id: p.id || p.poolAddress || 'unknown',
       pool: {
-        id: p.poolAddress,
-        name: p.poolName,
-        asset: p.token0Symbol,
-        poolAddress: p.poolAddress,
+        id: p.poolAddress || 'unknown',
+        name: p.poolName || 'Unknown Pool',
+        asset: p.token0Symbol || p.asset || 'Unknown',
+        poolAddress: p.poolAddress || '',
         protocol: {
-          name: p.protocol,
-          chain: p.chain,
+          name: p.protocol || 'Unknown Protocol',
+          chain: p.chain || 'ethereum',
         },
       },
-      amount: p.token0Amount,
-      amountUSD: p.totalValueUSD,
-      entryAPY: p.apy,
-      currentAPY: p.apy,
-      earnings: (p.fees24h * 30).toString(),  // Estimate monthly
-      earningsUSD: p.fees24h * 30,
-      startDate: p.lastUpdated,
-      lastUpdated: p.lastUpdated,
+      amount: p.token0Amount || p.amount || '0',
+      amountUSD: p.totalValueUSD || 0,
+      entryAPY: p.apy || 0,
+      currentAPY: p.apy || 0,
+      earnings: ((p.fees24h || 0) * 30).toString(),  // Estimate monthly
+      earningsUSD: (p.fees24h || 0) * 30,
+      startDate: p.lastUpdated || new Date().toISOString(),
+      lastUpdated: p.lastUpdated || new Date().toISOString(),
     })),
   } : null
 
@@ -85,19 +85,25 @@ export default function PortfolioPage() {
     toast.error('Failed to load portfolio')
   }
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | null | undefined) => {
+    if (!value || isNaN(value)) return '$0.00'
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
     if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
     return `$${value.toFixed(2)}`
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A'
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    } catch (e) {
+      return 'Invalid Date'
+    }
   }
 
   return (
@@ -228,7 +234,7 @@ export default function PortfolioPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-brown-400 dark:from-purple-600 dark:to-brown-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-all duration-300"></div>
                 <div className="relative glass-dark rounded-2xl p-6 transform transition-transform duration-300 hover:scale-[1.02]">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="text-sm text-brown-700 dark:text-brown-300 font-medium">Portfolio Value</div>
+                    <div className="text-sm text-brown-700 dark:text-brown-300 font-medium">Positions Value</div>
                     <div className="w-8 h-8 rounded-lg bg-purple-500/20 dark:bg-purple-400/20 flex items-center justify-center">
                       <GemIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     </div>

@@ -76,6 +76,8 @@ export class PortfolioService {
 
   /**
    * Add position to user's portfolio (manual tracking)
+   * ⚠️ NOT IMPLEMENTED - Manual portfolio tracking coming in next release
+   * Currently only real blockchain positions are tracked automatically
    */
   async addPosition(
     walletAddress: string,
@@ -83,76 +85,140 @@ export class PortfolioService {
     amount: number,
     amountUSD?: number
   ) {
-    // Not implemented with current schema: return a friendly placeholder
-    return { status: 'not-implemented', poolId, amount, amountUSD } as any;
+    console.warn('[PortfolioService] addPosition() not implemented - returns placeholder');
+    return {
+      status: 'not-implemented',
+      message: 'Manual position tracking coming soon',
+      poolId,
+      amount,
+      amountUSD
+    } as any;
   }
 
   /**
    * Remove position from portfolio
+   * ⚠️ NOT IMPLEMENTED - Coming in next release
    */
   async removePosition(walletAddress: string, poolId: string) {
-    // Not implemented with current schema
-    return { count: 0 } as any;
+    console.warn('[PortfolioService] removePosition() not implemented');
+    return { count: 0, status: 'not-implemented' } as any;
   }
 
   /**
    * Get user's watchlist
+   * ⚠️ NOT IMPLEMENTED - Watchlist feature coming in next release
    */
   async getWatchlist(walletAddress: string) {
-    // Not implemented with current schema
+    console.warn('[PortfolioService] getWatchlist() not implemented - returns empty array');
     return [] as any[];
   }
 
   /**
    * Add pool to watchlist
+   * ⚠️ NOT IMPLEMENTED - Coming in next release
    */
   async addToWatchlist(walletAddress: string, poolId: string, notes?: string) {
-    // Not implemented with current schema
-    return { id: 'temp', poolId, notes: notes || null, createdAt: new Date() } as any;
+    console.warn('[PortfolioService] addToWatchlist() not implemented');
+    return {
+      id: 'temp',
+      poolId,
+      notes: notes || null,
+      createdAt: new Date(),
+      status: 'not-implemented'
+    } as any;
   }
 
   /**
    * Remove pool from watchlist
+   * ⚠️ NOT IMPLEMENTED - Coming in next release
    */
   async removeFromWatchlist(walletAddress: string, poolId: string) {
-    // Not implemented with current schema
-    return { count: 0 } as any;
+    console.warn('[PortfolioService] removeFromWatchlist() not implemented');
+    return { count: 0, status: 'not-implemented' } as any;
   }
 
   /**
    * Get investment suggestions based on user's holdings
+   * Uses DefiLlama API data instead of database
    */
   async getSuggestions(walletAddress: string, riskTolerance: 'low' | 'medium' | 'high' = 'medium') {
-    const portfolio = await this.getUserPortfolio(walletAddress);
-    const userAssets = new Set((portfolio.positions || []).map((p: any) => p.pool.asset));
-    const suggestions = await (prisma as any).pool.findMany({
-      where: {
-        active: true,
-        verified: true,
-        riskLevel: riskTolerance,
-        // Prefer pools with assets user already has
-        ...(userAssets.size > 0 && {
-          asset: { in: Array.from(userAssets) },
-        }),
-      },
-      include: {
-        protocol: {
-          select: {
-            name: true,
-            logo: true,
-            chain: true,
-            audited: true,
-          },
-        },
-      },
-      orderBy: { totalAPY: 'desc' },
-      take: 5,
-    });
+    try {
+      const portfolio = await this.getUserPortfolio(walletAddress);
 
-    return {
-      suggestions,
-      reasoning: `Based on your ${riskTolerance} risk tolerance and current holdings`,
-    };
+      // Get user's current assets
+      const userAssets = new Set((portfolio.positions || []).map((p: any) => p.pool?.asset || p.token0Symbol).filter(Boolean));
+
+      // Import DefiLlama aggregator
+      const { defiLlamaAggregator } = await import('./DefiLlamaAggregator');
+
+      // Get top pools from DefiLlama based on risk tolerance
+      const minAPY = riskTolerance === 'low' ? 3 : riskTolerance === 'medium' ? 5 : 8;
+      const pools = await defiLlamaAggregator.getTopPools({
+        minAPY,
+        minTVL: 1000000, // $1M minimum TVL
+        chains: ['Ethereum'],
+        limit: 20,
+      });
+
+      // Filter and score suggestions
+      const scoredPools = pools.map(pool => {
+        let score = 0;
+
+        // Prefer pools with assets user already has
+        const poolAssets = pool.symbol.split('-');
+        if (poolAssets.some(asset => userAssets.has(asset))) {
+          score += 10;
+        }
+
+        // Prefer stablecoins for low risk
+        if (riskTolerance === 'low' && pool.stablecoin) {
+          score += 5;
+        }
+
+        // Prefer high APY for high risk
+        if (riskTolerance === 'high' && pool.apy > 15) {
+          score += 5;
+        }
+
+        // Avoid high IL risk for low/medium tolerance
+        if (riskTolerance !== 'high' && pool.ilRisk === 'yes') {
+          score -= 10;
+        }
+
+        return { ...pool, score };
+      });
+
+      // Sort by score and take top 5
+      const topSuggestions = scoredPools
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(pool => ({
+          id: pool.pool,
+          name: `${pool.project} ${pool.symbol}`,
+          asset: pool.symbol.split('-')[0],
+          poolAddress: pool.pool,
+          poolType: 'double',
+          totalAPY: pool.apy,
+          tvl: pool.tvlUsd,
+          riskLevel: pool.stablecoin ? 'low' : (pool.ilRisk === 'yes' ? 'high' : 'medium'),
+          protocol: {
+            name: pool.project,
+            chain: pool.chain,
+            audited: false,
+          },
+        }));
+
+      return {
+        suggestions: topSuggestions,
+        reasoning: `Based on your ${riskTolerance} risk tolerance${userAssets.size > 0 ? ' and current holdings' : ''}`,
+      };
+    } catch (error) {
+      console.error('Error getting suggestions:', error);
+      return {
+        suggestions: [],
+        reasoning: 'Unable to fetch suggestions at this time',
+      };
+    }
   }
 }
 

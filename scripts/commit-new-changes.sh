@@ -80,11 +80,11 @@ echo "🔨 Step 8: Build automation tools"
 git add Makefile
 commit_with_message "feat: add Makefile for build automation"
 
-# Commit 9: Production environment configuration
+# Commit 9: Unified environment configuration
 echo ""
-echo "⚙️ Step 9: Production environment setup"
-git add .env.production.example
-commit_with_message "feat: add production environment configuration template"
+echo "⚙️ Step 9: Unified environment setup"
+git add .env.example
+commit_with_message "feat: add unified environment configuration for dev and production"
 
 # Commit 10: Deployment scripts
 echo ""
