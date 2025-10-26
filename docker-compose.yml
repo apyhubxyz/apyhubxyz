@@ -57,8 +57,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-apyhub}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-apyhub}?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      RPC_URL: ${RPC_URL:-https://eth-mainnet.g.alchemy.com/v2/Qb1HjrRk7epyN-yl1MjjcZRx1r3CmSHj}
-      ENVIO_HYPERSYNC_API_KEY: ${ENVIO_HYPERSYNC_API_KEY:-6564a7cc-080f-47e2-8b57-2c06b95efac9}
+      RPC_URL: ${RPC_URL}
+      ALCHEMY_RPC_URL: ${ALCHEMY_RPC_URL}
+      ZAPPER_API_KEY: ${ZAPPER_API_KEY}
+      ENVIO_HYPERSYNC_API_KEY: ${ENVIO_HYPERSYNC_API_KEY}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,https://apyhub.xyz}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

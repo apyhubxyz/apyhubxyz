@@ -159,9 +159,12 @@ export class PoolService {
     let raw: any[] = [];
     try {
       raw = await envio.getIndexedPools(protocols, { limit: 500, offset: 0 });
+      if (!raw || raw.length === 0) {
+        console.log('⚠️ Envio returned empty data, using demo pools');
+        raw = this.getDemoPools();
+      }
     } catch (error) {
-      console.log('Envio fetch failed, using demo pools');
-      // Return demo pools for development
+      console.log('⚠️ Envio fetch failed, using demo pools:', error);
       raw = this.getDemoPools();
     }
     let mapped: UINormalizedPool[] = raw.map(mapEnvioToUIPool);
@@ -205,11 +208,21 @@ export class PoolService {
    * Get a single pool by ID with all details
    */
   async getPoolById(id: string) {
-    // Treat id as poolAddress for Envio-backed pools
-    const raw = await envio.getIndexedPools(DEFAULT_PROTOCOLS, { limit: 1000, offset: 0 });
-    const found = raw.find((p: any) => (p.poolAddress || '').toLowerCase() === id.toLowerCase());
-    if (!found) return null;
-    return mapEnvioToUIPool(found);
+    try {
+      // Treat id as poolAddress for Envio-backed pools
+      const raw = await envio.getIndexedPools(DEFAULT_PROTOCOLS, { limit: 1000, offset: 0 });
+      const found = raw.find((p: any) => (p.poolAddress || '').toLowerCase() === id.toLowerCase());
+      if (found) {
+        return mapEnvioToUIPool(found);
+      }
+    } catch (error) {
+      console.log('⚠️ Envio fetch failed, checking demo pools:', error);
+    }
+    
+    // Fallback to demo pools
+    const demoPools = this.getDemoPools();
+    const found = demoPools.find((p: any) => (p.poolAddress || '').toLowerCase() === id.toLowerCase());
+    return found ? mapEnvioToUIPool(found) : null;
   }
 
   /**
@@ -225,11 +238,31 @@ export class PoolService {
    * Get top pools by APY
    */
   async getTopPools(limit: number = 10) {
-    const raw = await envio.getIndexedPools(DEFAULT_PROTOCOLS, { limit: 500, offset: 0 });
-    return raw
+    try {
+      // Try to get pools from Envio
+      const raw = await envio.getIndexedPools(DEFAULT_PROTOCOLS, { limit: 500, offset: 0 });
+      if (raw && raw.length > 0) {
+        const mapped = raw
+          .map(mapEnvioToUIPool)
+          .sort((a, b) => b.totalAPY - a.totalAPY)
+          .slice(0, limit);
+        
+        console.log(`✅ Returning ${mapped.length} pools from Envio`);
+        return mapped;
+      }
+    } catch (error) {
+      console.log('⚠️ Envio fetch failed, using demo pools:', error);
+    }
+    
+    // Fallback to demo pools if Envio fails or returns empty
+    const demoPools = this.getDemoPools();
+    const mapped = demoPools
       .map(mapEnvioToUIPool)
       .sort((a, b) => b.totalAPY - a.totalAPY)
       .slice(0, limit);
+    
+    console.log(`✅ Returning ${mapped.length} demo pools`);
+    return mapped;
   }
 
   /**
@@ -269,32 +302,191 @@ export class PoolService {
    * Get demo pools for development/testing
    */
   getDemoPools() {
+    // Comprehensive demo data with high APY pools
     return [
+      // Pendle - High APY yield trading
       {
-        poolAddress: '0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640',
-        protocol: 'Uniswap V3',
-        tokenA: 'WETH',
+        poolAddress: '0x1234567890abcdef1234567890abcdef12345678',
+        protocol: 'Pendle',
+        tokenA: 'stETH',
+        tokenB: 'PT-stETH',
+        apy: 85.6,
+        tvlUsd: 125000000,
+        timestamp: Date.now(),
+      },
+      {
+        poolAddress: '0x2345678901bcdef2345678901bcdef234567890a',
+        protocol: 'Pendle',
+        tokenA: 'weETH',
+        tokenB: 'YT-weETH',
+        apy: 72.3,
+        tvlUsd: 89000000,
+        timestamp: Date.now(),
+      },
+      
+      // Beefy Finance - Auto-compounding vaults
+      {
+        poolAddress: '0x3456789012cdef3456789012cdef3456789012bc',
+        protocol: 'Beefy',
+        tokenA: 'ETH',
         tokenB: 'USDC',
-        apy: 18.5,
-        tvlUsd: 285000000,
+        apy: 68.4,
+        tvlUsd: 156000000,
         timestamp: Date.now(),
       },
       {
-        poolAddress: '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2',
-        protocol: 'Aave V3',
-        tokenA: 'WETH',
-        tokenB: '',
-        apy: 3.2,
-        tvlUsd: 450000000,
+        poolAddress: '0x456789012def456789012def456789012def4567',
+        protocol: 'Beefy',
+        tokenA: 'WBTC',
+        tokenB: 'WETH',
+        apy: 52.1,
+        tvlUsd: 234000000,
         timestamp: Date.now(),
       },
+      
+      // Yearn Finance - Yield aggregator
+      {
+        poolAddress: '0x567890123ef567890123ef567890123ef567890d',
+        protocol: 'Yearn',
+        tokenA: 'yvUSDC',
+        tokenB: '',
+        apy: 45.8,
+        tvlUsd: 312000000,
+        timestamp: Date.now(),
+      },
+      {
+        poolAddress: '0x67890123f67890123f67890123f67890123f6789',
+        protocol: 'Yearn',
+        tokenA: 'yvWETH',
+        tokenB: '',
+        apy: 38.9,
+        tvlUsd: 198000000,
+        timestamp: Date.now(),
+      },
+      
+      // Curve - Stable pools
       {
         poolAddress: '0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7',
         protocol: 'Curve',
         tokenA: '3CRV',
         tokenB: '',
-        apy: 5.8,
+        apy: 42.5,
         tvlUsd: 180000000,
+        timestamp: Date.now(),
+      },
+      {
+        poolAddress: '0x789012345789012345789012345789012345789e',
+        protocol: 'Curve',
+        tokenA: 'crvUSD',
+        tokenB: 'USDC',
+        apy: 35.2,
+        tvlUsd: 267000000,
+        timestamp: Date.now(),
+      },
+      
+      // Uniswap V3 - Concentrated liquidity
+      {
+        poolAddress: '0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640',
+        protocol: 'Uniswap V3',
+        tokenA: 'WETH',
+        tokenB: 'USDC',
+        apy: 31.7,
+        tvlUsd: 285000000,
+        timestamp: Date.now(),
+      },
+      {
+        poolAddress: '0x890123456890123456890123456890123456789f',
+        protocol: 'Uniswap V3',
+        tokenA: 'WBTC',
+        tokenB: 'USDT',
+        apy: 28.4,
+        tvlUsd: 192000000,
+        timestamp: Date.now(),
+      },
+      
+      // Aave V3 - Lending
+      {
+        poolAddress: '0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2',
+        protocol: 'Aave V3',
+        tokenA: 'WETH',
+        tokenB: '',
+        apy: 25.8,
+        tvlUsd: 450000000,
+        timestamp: Date.now(),
+      },
+      {
+        poolAddress: '0x901234567901234567901234567901234567890a',
+        protocol: 'Aave V3',
+        tokenA: 'USDC',
+        tokenB: '',
+        apy: 22.1,
+        tvlUsd: 380000000,
+        timestamp: Date.now(),
+      },
+      
+      // Balancer - Multi-token pools
+      {
+        poolAddress: '0xa01234567a01234567a01234567a01234567a012',
+        protocol: 'Balancer',
+        tokenA: 'WETH',
+        tokenB: 'wstETH',
+        apy: 29.6,
+        tvlUsd: 145000000,
+        timestamp: Date.now(),
+      },
+      
+      // GMX - Perpetuals liquidity
+      {
+        poolAddress: '0xb01234567b01234567b01234567b01234567b012',
+        protocol: 'GMX',
+        tokenA: 'GLP',
+        tokenB: '',
+        apy: 48.3,
+        tvlUsd: 412000000,
+        timestamp: Date.now(),
+      },
+      
+      // Radiant Capital
+      {
+        poolAddress: '0xc01234567c01234567c01234567c01234567c012',
+        protocol: 'Radiant',
+        tokenA: 'RDNT',
+        tokenB: 'WETH',
+        apy: 56.7,
+        tvlUsd: 87000000,
+        timestamp: Date.now(),
+      },
+      
+      // Stargate - Cross-chain liquidity
+      {
+        poolAddress: '0xd01234567d01234567d01234567d01234567d012',
+        protocol: 'Stargate',
+        tokenA: 'STG',
+        tokenB: 'USDC',
+        apy: 41.2,
+        tvlUsd: 156000000,
+        timestamp: Date.now(),
+      },
+      
+      // Morpho - P2P lending
+      {
+        poolAddress: '0xe01234567e01234567e01234567e01234567e012',
+        protocol: 'Morpho',
+        tokenA: 'MORPHO',
+        tokenB: 'WETH',
+        apy: 37.8,
+        tvlUsd: 98000000,
+        timestamp: Date.now(),
+      },
+      
+      // Rocket Pool - Liquid staking
+      {
+        poolAddress: '0xf01234567f01234567f01234567f01234567f012',
+        protocol: 'Rocket Pool',
+        tokenA: 'rETH',
+        tokenB: '',
+        apy: 26.4,
+        tvlUsd: 2340000000,
         timestamp: Date.now(),
       },
     ];

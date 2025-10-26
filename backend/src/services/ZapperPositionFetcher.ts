@@ -23,7 +23,14 @@ export interface ZapperPosition {
 
 export class ZapperPositionFetcher {
   private readonly API_BASE = 'https://api.zapper.xyz/v2';
-  private readonly API_KEY = process.env.ZAPPER_API_KEY || 'dfb5bff7-6564-4631-8efb-871768e61bb4';
+  private readonly API_KEY: string;
+
+  constructor() {
+    if (!process.env.ZAPPER_API_KEY) {
+      throw new Error('ZAPPER_API_KEY environment variable is required');
+    }
+    this.API_KEY = process.env.ZAPPER_API_KEY;
+  }
   
   /**
    * Fetch ALL positions for a user (covers 1000+ protocols)

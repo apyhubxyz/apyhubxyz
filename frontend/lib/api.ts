@@ -175,13 +175,17 @@ export const apiClient = {
       return api.get('/pools', { params: filters }) as Promise<{ pools: Pool[]; pagination: any }>;
     },
     getById: async (id: string): Promise<Pool> => {
-      return api.get(`/pools/${id}`) as Promise<Pool>;
+      const response: any = await api.get(`/pools/${id}`);
+      return response.data || response;
     },
     getTop: async (limit: number = 10): Promise<Pool[]> => {
-      return api.get(`/pools/top/${limit}`) as Promise<Pool[]>;
+      const response: any = await api.get(`/pools/top/${limit}`);
+      // Response interceptor already returns response.data, so check for nested data
+      return response.data || response || [];
     },
     search: async (query: string): Promise<Pool[]> => {
-      return api.get(`/pools/search/${query}`) as Promise<Pool[]>;
+      const response: any = await api.get(`/pools/search/${query}`);
+      return response.data || response || [];
     },
     getStats: async (): Promise<any> => {
       return api.get('/pools/stats/overview');
