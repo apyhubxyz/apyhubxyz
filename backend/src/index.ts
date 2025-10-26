@@ -15,6 +15,7 @@ import { aiRoutes } from './routes/ai';
 import { envioRoutes } from './routes/envio';
 import positionsRoutes from './routes/positions';
 import dashboardRoutes from './routes/dashboard';
+import bridgeRoutes from './routes/bridge';
 // import { DeFiService } from './services/DeFiService';
 import PrismaService from './services/PrismaService';
 // import { enhancedApyRoutes } from './routes/enhanced-apy';
@@ -149,6 +150,16 @@ app.get('/', (req, res) => {
         suggest: 'POST /api/ai/suggest',
         history: 'GET /api/ai/chat/history/:sessionId',
       },
+      bridge: {
+        routes: 'GET /api/bridge/routes?fromChain=ethereum&toChain=arbitrum&token=0x...&amount=1000000000000000000&recipient=0x...',
+        quote: 'POST /api/bridge/quote',
+        execute: 'POST /api/bridge/execute',
+        status: 'GET /api/bridge/status/:bridgeId',
+        history: 'GET /api/bridge/history/:address',
+        analytics: 'GET /api/bridge/analytics',
+        optimize: 'POST /api/bridge/optimize',
+        unifiedBalance: 'GET /api/unified-balance/:address'
+      },
       enhancedV2: {
         apy: {
           positions: 'GET /api/v2/apy/positions?chains=ethereum,arbitrum&minAPY=10&sortBy=apy',
@@ -221,6 +232,8 @@ app.use('/api/ai', aiRoutes(provider));
 app.use('/api/envio', envioRoutes());
 app.use('/api/positions', positionsRoutes);  // For Pools page (discovery)
 app.use('/api/dashboard', dashboardRoutes);  // For Dashboard (personal positions)
+app.use('/api/bridge', bridgeRoutes);  // Avail Nexus Bridge integration
+app.use('/api', bridgeRoutes); // Also mount unified-balance at /api level
 
 // Enhanced V2 routes - 50+ protocol support (COMING SOON)
 // Note: These routes require EnhancedDeFiService which is currently being optimized
@@ -298,6 +311,8 @@ server.listen(PORT, () => {
   console.log(`   🔹 Pools: /api/pools`);
   console.log(`   🔹 Portfolio: /api/portfolio/:address`);
   console.log(`   🔹 AI Chat: /api/ai/chat`);
+  console.log(`   🌉 Bridge: /api/bridge/* (Avail Nexus)`);
+  console.log(`   💰 Unified Balance: /api/unified-balance/:address`);
   console.log(`   ⚡ Enhanced APY V2: /api/v2/apy/* (preparing)`);
   console.log(`   🤖 Enhanced AI V2: /api/v2/ai/* (preparing)`);
   // console.log(`   🔹 Legacy APY: /api/apy`);

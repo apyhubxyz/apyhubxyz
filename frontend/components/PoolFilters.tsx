@@ -33,34 +33,19 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
         const res = await fetch(`${API_URL}/positions/protocols?_t=${Date.now()}`)
         const data = await res.json()
         
-        console.log('📋 Raw API Response:', data)
-        console.log('📋 Fetched protocols count:', data.count)
-        console.log('📋 Protocols data is array?', Array.isArray(data.data))
-        console.log('📋 Protocols data length:', data.data?.length)
-        
         const list: Protocol[] = Array.isArray(data.data) ? data.data : []
-        console.log('📋 List length before sort:', list.length)
-        console.log('📋 First 5 protocols:', list.slice(0, 5))
         
         // Sort by name for nicer UX
         const sorted = list.sort((a, b) => a.name.localeCompare(b.name))
-        console.log('📋 Sorted list length:', sorted.length)
         
         setProtocols(sorted)
-        console.log('📋 setState called with', sorted.length, 'protocols')
       } catch (e) {
-        console.error('❌ Error fetching protocols:', e)
+        console.error('Error fetching protocols:', e)
         setProtocols([])
       }
     }
     fetchProtocols()
   }, [filters.chain])
-  
-  // Debug: Log whenever protocols state changes
-  useEffect(() => {
-    console.log('🔄 Protocols state updated! Length:', protocols.length)
-    console.log('🔄 Current protocols:', protocols.map(p => p.name))
-  }, [protocols])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value

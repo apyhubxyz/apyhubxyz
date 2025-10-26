@@ -14,6 +14,7 @@
   "dependencies": {
     "@heroicons/react": "^2.1.5",
     "@rainbow-me/rainbowkit": "^2.2.9",
+    "@reown/appkit": "^1.8.11",
     "@tanstack/react-query": "^5.90.5",
     "axios": "^1.12.2",
     "framer-motion": "^11.3.28",
@@ -48,6 +49,7 @@
     "@walletconnect/sign-client": "^2.22.2",
     "@walletconnect/universal-provider": "^2.22.2",
     "@walletconnect/ethereum-provider": "^2.22.4",
+    "@reown/appkit": "^1.8.11",
     "@paulmillr/qr": "npm:qr@^0.4.1",
     "ws": "^8.18.3",
     "bufferutil": "^4.0.9",
