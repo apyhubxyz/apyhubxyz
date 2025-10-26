@@ -71,7 +71,7 @@ export default function PoolsTable({ pools, loading, sortBy, sortOrder, onSort }
   return (
     <div className="glass-dark rounded-2xl border border-brown-200 dark:border-brown-700 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-auto">
           <thead className="bg-brown-50/50 dark:bg-brown-900/30 border-b border-brown-200 dark:border-brown-700">
             <tr>
               <th className="px-6 py-4 text-left">
@@ -120,7 +120,6 @@ export default function PoolsTable({ pools, loading, sortBy, sortOrder, onSort }
                 </button>
               </th>
               <th className="px-6 py-4 text-left font-semibold text-brown-700 dark:text-brown-300">Type</th>
-              <th className="px-6 py-4 text-left font-semibold text-brown-700 dark:text-brown-300">Features</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-brown-200 dark:divide-brown-700">
@@ -185,12 +184,10 @@ export default function PoolsTable({ pools, loading, sortBy, sortOrder, onSort }
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="inline-flex px-2 py-1 bg-brown-100 dark:bg-brown-800 text-brown-700 dark:text-brown-300 rounded text-xs font-medium uppercase">
-                    {pool.poolType}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
                   <div className="flex gap-2">
+                    <span className="inline-flex px-2 py-1 bg-brown-100 dark:bg-brown-800 text-brown-700 dark:text-brown-300 rounded text-xs font-medium uppercase">
+                      {pool.poolType}
+                    </span>
                     {pool.isLoopable && (
                       <span className="inline-flex px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-xs font-medium">
                         Loopable

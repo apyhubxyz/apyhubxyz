@@ -24,23 +24,43 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
 
   const [protocols, setProtocols] = useState<Protocol[]>([])
 
-  // Fetch protocols (optionally filtered by chain) for the dropdown
+  // Fetch protocols from DefiLlama (1000+ protocols) for the dropdown
   useEffect(() => {
     const fetchProtocols = async () => {
       try {
-        const params: any = { active: true }
-        if (filters.chain) params.chain = filters.chain
-        const res: any = await apiClient.protocols.list(params)
-        const list: Protocol[] = Array.isArray(res) ? res : res?.data ?? []
+        // Use positions/protocols endpoint which fetches from DefiLlama
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+        const res = await fetch(`${API_URL}/positions/protocols?_t=${Date.now()}`)
+        const data = await res.json()
+        
+        console.log('📋 Raw API Response:', data)
+        console.log('📋 Fetched protocols count:', data.count)
+        console.log('📋 Protocols data is array?', Array.isArray(data.data))
+        console.log('📋 Protocols data length:', data.data?.length)
+        
+        const list: Protocol[] = Array.isArray(data.data) ? data.data : []
+        console.log('📋 List length before sort:', list.length)
+        console.log('📋 First 5 protocols:', list.slice(0, 5))
+        
         // Sort by name for nicer UX
-        setProtocols(list.sort((a, b) => a.name.localeCompare(b.name)))
+        const sorted = list.sort((a, b) => a.name.localeCompare(b.name))
+        console.log('📋 Sorted list length:', sorted.length)
+        
+        setProtocols(sorted)
+        console.log('📋 setState called with', sorted.length, 'protocols')
       } catch (e) {
-        // fail silently; filter can still work without protocol options
+        console.error('❌ Error fetching protocols:', e)
         setProtocols([])
       }
     }
     fetchProtocols()
   }, [filters.chain])
+  
+  // Debug: Log whenever protocols state changes
+  useEffect(() => {
+    console.log('🔄 Protocols state updated! Length:', protocols.length)
+    console.log('🔄 Current protocols:', protocols.map(p => p.name))
+  }, [protocols])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -126,14 +146,14 @@ export default function PoolFilters({ onFilterChange, onSearch }: PoolFiltersPro
           {/* Protocol Filter */}
           <div>
             <label className="block text-sm font-medium text-brown-700 dark:text-brown-300 mb-2">
-              Protocol
+              Protocol {protocols.length > 0 && `(${protocols.length})`}
             </label>
             <select
               value={filters.protocolId}
               onChange={(e) => handleFilterChange('protocolId', e.target.value)}
               className="w-full px-3 py-2 glass-dark border border-brown-300 dark:border-brown-600 rounded-lg focus:ring-2 focus:ring-brown-500 dark:focus:ring-purple-500 outline-none text-brown-900 dark:text-brown-100"
             >
-              <option value="">All Protocols</option>
+              <option value="">All Protocols ({protocols.length})</option>
               {protocols.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
