@@ -107,10 +107,10 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mb-8 w-full">
         {/* Breadcrumb */}
         <Link
           href="/"
@@ -206,24 +206,26 @@ export default function PortfolioPage() {
                 ? "You don't have any DeFi positions yet. Start exploring yield opportunities!"
                 : "This address has no DeFi positions. Try a different address or connect your wallet."}
             </p>
-            {!isConnected && (
-              <button
-                onClick={() => {
-                  setSearchAddress('')
-                  setManualAddress('')
-                }}
-                className="inline-flex items-center gap-2 px-6 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl font-medium hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-all duration-300 text-brown-700 dark:text-brown-300 mb-4"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              {!isConnected && (
+                <button
+                  onClick={() => {
+                    setSearchAddress('')
+                    setManualAddress('')
+                  }}
+                  className="inline-flex items-center gap-5 px-6 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl font-medium hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-all duration-300 text-brown-700 dark:text-brown-300"
+                >
+                  ← Try Another Address
+                </button>
+              )}
+              <Link
+                href="/pools"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300"
               >
-                ← Try Another Address
-              </button>
-            )}
-            <Link
-              href="/pools"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-            >
-              <span>Explore Opportunities</span>
-              <span className="text-lg">→</span>
-            </Link>
+                <span>Explore Opportunities</span>
+                <span className="text-lg">→</span>
+              </Link>
+            </div>
           </div>
         ) : (
           <>
