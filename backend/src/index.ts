@@ -35,6 +35,7 @@ import { envioRoutes } from './routes/envio';
 import positionsRoutes from './routes/positions';
 import dashboardRoutes from './routes/dashboard';
 import bridgeRoutes from './routes/bridge';
+import strategyAIRoutes from './routes/strategy-ai';
 // import { DeFiService } from './services/DeFiService';
 import PrismaService from './services/PrismaService';
 // import { enhancedApyRoutes } from './routes/enhanced-apy';
@@ -189,6 +190,14 @@ app.get('/', (req, res) => {
         suggest: 'POST /api/ai/suggest',
         history: 'GET /api/ai/chat/history/:sessionId',
       },
+      strategyAI: {
+        recommend: 'POST /api/strategy-ai/recommend',
+        chat: 'POST /api/strategy-ai/chat',
+        search: 'GET /api/strategy-ai/search?asset=ETH&minAPY=10',
+        all: 'GET /api/strategy-ai/all',
+        stats: 'GET /api/strategy-ai/stats',
+        analyze: 'POST /api/strategy-ai/analyze',
+      },
       bridge: {
         routes: 'GET /api/bridge/routes?fromChain=ethereum&toChain=arbitrum&token=0x...&amount=1000000000000000000&recipient=0x...',
         quote: 'POST /api/bridge/quote',
@@ -273,6 +282,7 @@ app.use('/api/positions', positionsRoutes);  // For Pools page (discovery)
 app.use('/api/dashboard', dashboardRoutes);  // For Dashboard (personal positions)
 app.use('/api/bridge', bridgeRoutes);  // Avail Nexus Bridge integration
 app.use('/api', bridgeRoutes); // Also mount unified-balance at /api level
+app.use('/api/strategy-ai', strategyAIRoutes);  // RAG-based strategy recommendations
 
 // Enhanced V2 routes - 50+ protocol support (COMING SOON)
 // Note: These routes require EnhancedDeFiService which is currently being optimized
@@ -352,6 +362,7 @@ server.listen(PORT, () => {
   console.log(`   🔹 AI Chat: /api/ai/chat`);
   console.log(`   🌉 Bridge: /api/bridge/* (Avail Nexus)`);
   console.log(`   💰 Unified Balance: /api/unified-balance/:address`);
+  console.log(`   🧠 Strategy AI (RAG): /api/strategy-ai/* (NEW!)`);
   console.log(`   ⚡ Enhanced APY V2: /api/v2/apy/* (preparing)`);
   console.log(`   🤖 Enhanced AI V2: /api/v2/ai/* (preparing)`);
   // console.log(`   🔹 Legacy APY: /api/apy`);

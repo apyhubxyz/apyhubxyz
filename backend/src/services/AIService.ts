@@ -44,8 +44,13 @@ export class AIService {
       // Get user context if wallet address provided
       let userContext = '';
       if (walletAddress) {
-        const portfolio = await this.portfolioService.getUserPortfolio(walletAddress);
-        userContext = this.buildUserContext(portfolio);
+        try {
+          const portfolio = await this.portfolioService.getUserPortfolio(walletAddress);
+          userContext = this.buildUserContext(portfolio);
+        } catch (error) {
+          console.warn('Could not fetch user portfolio:', error);
+          userContext = 'User context: Unable to fetch portfolio data.';
+        }
       }
 
       // Get pool data context
@@ -177,21 +182,25 @@ Guidelines:
    * Build user context for AI
    */
   private buildUserContext(portfolio: any): string {
-    if (!portfolio.positions || portfolio.positions.length === 0) {
+    if (!portfolio || !portfolio.positions || portfolio.positions.length === 0) {
       return 'User context: New user with no current positions.';
     }
 
     const positionsSummary = portfolio.positions
       .slice(0, 5)
-      .map(
-        (p: any) =>
-          `${p.pool.asset} in ${p.pool.protocol.name} (${p.currentAPY}% APY, $${p.amountUSD})`
-      )
+      .map((p: any) => {
+        // Handle different position structures
+        const asset = p.pool?.asset || p.asset || 'Unknown';
+        const protocol = p.pool?.protocol?.name || p.protocol || 'Unknown';
+        const apy = p.currentAPY || p.apy || 0;
+        const amount = p.amountUSD || p.amount || 0;
+        return `${asset} in ${protocol} (${apy}% APY, $${amount})`;
+      })
       .join(', ');
 
     return `User context:
-- Total portfolio value: $${portfolio.portfolio.totalValue.toFixed(2)}
-- Weighted APY: ${portfolio.portfolio.weightedAPY.toFixed(2)}%
+- Total portfolio value: $${portfolio.portfolio?.totalValue?.toFixed(2) || '0.00'}
+- Weighted APY: ${portfolio.portfolio?.weightedAPY?.toFixed(2) || '0.00'}%
 - Current positions: ${positionsSummary}`;
   }
 

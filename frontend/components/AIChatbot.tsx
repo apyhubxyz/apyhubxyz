@@ -19,6 +19,8 @@ interface Message {
 export default function AIChatbot() {
   const { address } = useAccount()
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -29,9 +31,16 @@ export default function AIChatbot() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const sessionId = useRef(`session_${Date.now()}`)
+  
+  // Ensure component is client-side mounted
+  useEffect(() => {
+    setMounted(true)
+  }, []);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   useEffect(() => {
@@ -53,17 +62,29 @@ export default function AIChatbot() {
         sessionId: sessionId.current,
       })
 
+      // The response is already unwrapped by axios interceptor
+      const messageContent = response?.data?.message || response?.message || 'I apologize, but I couldn\'t generate a response. Please try again.'
+      
       const assistantMessage: Message = {
         role: 'assistant',
-        content: response.message || response.reply || 'I apologize, but I couldn\'t generate a response. Please try again.',
+        content: messageContent,
       }
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Chat error:', error)
+      
+      // More detailed error handling
+      let errorContent = 'Sorry, I encountered an error. Please try again.'
+      if (error?.message?.includes('404')) {
+        errorContent = 'AI service endpoint not found. Please check the backend configuration.'
+      } else if (error?.message?.includes('network')) {
+        errorContent = 'Network error. Please check if the backend server is running.'
+      }
+      
       toast.error('Failed to get AI response')
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorContent,
       }
       setMessages((prev) => [...prev, errorMessage])
     } finally {
@@ -86,22 +107,75 @@ export default function AIChatbot() {
     'Compare USDC pools across different protocols',
   ]
 
+  // Don't render until client-side mounted
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <>
-      {/* Floating Button */}
+      {/* Floating Button with inline styles for reliability */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-br from-purple-600 to-purple-800 text-white p-4 rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-110 group"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(true);
+          }}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            background: 'linear-gradient(135deg, #9333ea 0%, #6b21a8 100%)',
+            color: 'white',
+            padding: '16px',
+            borderRadius: '50%',
+            boxShadow: '0 10px 25px rgba(147, 51, 234, 0.3)',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          aria-label="Open AI Chat"
+          type="button"
         >
-          <SparklesIcon className="w-7 h-7 group-hover:rotate-12 transition-transform" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+          <SparklesIcon style={{ width: '28px', height: '28px' }} />
+          <span style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            width: '12px',
+            height: '12px',
+            backgroundColor: '#10b981',
+            borderRadius: '50%',
+            animation: 'pulse 2s infinite',
+          }}></span>
         </button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window with higher z-index and inline critical styles */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+        <div
+          className="fixed bottom-6 right-6 w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 10000,
+            width: '384px',
+            height: '600px',
+            maxHeight: '80vh',
+          }}
+        >
           {/* Header */}
           <div className="bg-gradient-to-br from-purple-600 to-purple-800 text-white p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -117,6 +191,8 @@ export default function AIChatbot() {
             <button
               onClick={() => setIsOpen(false)}
               className="hover:bg-white/20 rounded-lg p-1 transition-colors"
+              type="button"
+              aria-label="Close chat"
             >
               <XMarkIcon className="w-5 h-5" />
             </button>
