@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { EnhancedDeFiService } from './EnhancedDeFiService';
 import { AvailNexusBridge } from './AvailNexusBridge';
 import { ethers } from 'ethers';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
 import { getEnvioHyperIndex } from './EnvioHyperIndex';
 import { DEFI_API_CONFIG } from '../config/defi-apis';
 
@@ -611,7 +611,7 @@ User Context:
     const provider = new ethers.JsonRpcProvider(
       process.env.RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo'
     );
-    const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    const redis = createSilentRedis();
     const envio = getEnvioHyperIndex(provider, {
       apiKey: DEFI_API_CONFIG.envio.apiKey,
       indexerUrl: DEFI_API_CONFIG.envio.hyperIndexUrl,

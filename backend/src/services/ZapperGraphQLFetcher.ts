@@ -25,13 +25,16 @@ export interface ZapperPosition {
 
 export class ZapperGraphQLFetcher {
   private readonly GRAPHQL_ENDPOINT = 'https://public.zapper.xyz/graphql';
-  private readonly API_KEY: string;
+  private readonly API_KEY: string | null;
+  private static warnedOnce = false;
 
   constructor() {
-    if (!process.env.ZAPPER_API_KEY) {
-      throw new Error('ZAPPER_API_KEY environment variable is required');
+    // Check API key without logging warning (will be logged when actually used)
+    if (!process.env.ZAPPER_API_KEY || process.env.ZAPPER_API_KEY === 'your_zapper_api_key_here') {
+      this.API_KEY = null;
+    } else {
+      this.API_KEY = process.env.ZAPPER_API_KEY;
     }
-    this.API_KEY = process.env.ZAPPER_API_KEY;
   }
   
   /**
@@ -39,9 +42,11 @@ export class ZapperGraphQLFetcher {
    * Covers: Extra Finance, EigenLayer, Ether.fi, Dolomite, and 1000+ more
    */
   async fetchAllPositions(userAddress: string): Promise<ZapperPosition[]> {
+    if (!this.API_KEY) {
+      return [];
+    }
+
     try {
-      console.log(`\n🔍 [Zapper GraphQL] Fetching ALL DeFi positions for ${userAddress}...`);
-      
       // GraphQL query for app balances (DeFi positions)
       const query = `
         query AppBalances($addresses: [Address!]!, $first: Int) {
@@ -130,8 +135,6 @@ export class ZapperGraphQLFetcher {
       const apps = portfolio?.appBalances?.byApp?.edges || [];
       const positions: ZapperPosition[] = [];
       
-      console.log(`  → Found ${apps.length} apps (protocols) with balances`);
-      
       // Parse each app's positions
       apps.forEach((appEdge: any) => {
         const appNode = appEdge.node;
@@ -178,12 +181,8 @@ export class ZapperGraphQLFetcher {
         });
       });
       
-      console.log(`✅ [Zapper GraphQL] Found ${positions.length} positions from ${apps.length} protocols`);
-      console.log(`   Protocols: ${apps.slice(0, 5).map((a: any) => a.node.app?.displayName).join(', ')}${apps.length > 5 ? '...' : ''}\n`);
-      
       return positions;
     } catch (error: any) {
-      console.error(`❌ [Zapper] Error:`, error.response?.data || error.message);
       return [];
     }
   }
@@ -203,5 +202,14 @@ export class ZapperGraphQLFetcher {
   }
 }
 
-export const zapperGraphQLFetcher = new ZapperGraphQLFetcher();
+// Lazy initialization - create instance only when needed
+let _instance: ZapperGraphQLFetcher | null = null;
+export const zapperGraphQLFetcher = {
+  fetchAllPositions: (userAddress: string) => {
+    if (!_instance) {
+      _instance = new ZapperGraphQLFetcher();
+    }
+    return _instance.fetchAllPositions(userAddress);
+  }
+};
 

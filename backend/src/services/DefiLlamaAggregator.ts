@@ -1,13 +1,9 @@
 // DefiLlama Aggregator - Fetch ALL DeFi yields from one free API
 // No auth required, covers 1000+ protocols
 import axios from 'axios';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
 
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  retryStrategy: () => null,
-});
+const redis = createSilentRedis();
 
 export interface DefiLlamaPool {
   chain: string;

@@ -556,10 +556,7 @@ export default function BridgeHistory() {
         transition={{ delay: 0.3 }}
         className="flex justify-center"
       >
-        <button className="inline-flex items-center gap-2 px-6 py-3 glass rounded-xl font-medium text-brown-700 dark:text-brown-300 hover:bg-brown-100 dark:hover:bg-brown-800/50 transition-colors">
-          <HiDownload />
-          Export History
-        </button>
+
       </motion.div>
     </div>
   )

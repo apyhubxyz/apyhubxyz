@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ethers } from 'ethers';
 import { getEnvioHyperIndex } from '../services/EnvioHyperIndex';
 import { DEFI_API_CONFIG } from '../config/defi-apis';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
 
 export function envioRoutes() {
   const router = Router();
@@ -13,7 +13,7 @@ export function envioRoutes() {
   const provider = new ethers.JsonRpcProvider(
     process.env.RPC_URL || process.env.ALCHEMY_RPC_URL
   );
-  const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+  const redis = createSilentRedis();
   const envio = getEnvioHyperIndex(provider, {
     apiKey: DEFI_API_CONFIG.envio.apiKey,
     indexerUrl: DEFI_API_CONFIG.envio.hyperIndexUrl,

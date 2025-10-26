@@ -1,12 +1,31 @@
 // backend/src/index.ts
+// IMPORTANT: Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env from root directory BEFORE importing any services
+// Use path relative to this file: backend/src -> go up 2 levels to reach project root
+const envPath = path.resolve(__dirname, '..', '..', '.env');
+const envResult = dotenv.config({ path: envPath });
+
+// Log environment for debugging
+console.log('📁 Loading .env from:', envPath);
+if (envResult.error) {
+  console.warn('⚠️  Warning: Could not load .env file:', envResult.error.message);
+} else {
+  console.log('✅ .env file loaded successfully');
+}
+console.log('🔑 OpenAI API Key:', process.env.OPENAI_API_KEY ? '✅ Loaded' : '❌ Missing');
+console.log('🔑 Zapper API Key:', process.env.ZAPPER_API_KEY && process.env.ZAPPER_API_KEY !== 'your_zapper_api_key_here' ? '✅ Loaded' : '❌ Missing');
+console.log('🔑 Alchemy RPC URL:', process.env.ALCHEMY_RPC_URL && !process.env.ALCHEMY_RPC_URL.includes('YOUR_ALCHEMY_API_KEY') ? '✅ Loaded' : '❌ Missing');
+
+// Now import everything else AFTER environment is loaded
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { ethers } from 'ethers';
-import dotenv from 'dotenv';
-import path from 'path';
 // import { apyRoutes } from './routes/apy';
 import { poolsRoutes } from './routes/pools';
 import { protocolsRoutes } from './routes/protocols';
@@ -24,9 +43,6 @@ import PrismaService from './services/PrismaService';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 
-// Load .env from root directory
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -38,6 +54,35 @@ const wss = new WebSocketServer({
   server,
   path: '/ws'
 });
+
+// CORS - MUST be first to handle preflight requests
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 hours
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Security & Performance Middleware
 app.use(helmet({
@@ -54,12 +99,6 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use('/api/', limiter);
-
-// CORS
-app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
-  credentials: true,
-}));
 
 // Body parser
 app.use(express.json());

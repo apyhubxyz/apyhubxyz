@@ -1,14 +1,28 @@
 // backend/src/services/lpAggregator.service.ts
 import { PrismaClient } from '@prisma/client';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
 import Bull from 'bull';
 import { ethers } from 'ethers';
 import { getEnvioHyperIndex } from './EnvioHyperIndex';
 import { DEFI_API_CONFIG } from '../config/defi-apis';
 
 const prisma = new PrismaClient();
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-const lpQueue = new Bull('lp-aggregation', process.env.REDIS_URL || 'redis://localhost:6379');
+const redis = createSilentRedis();
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
+// Create Bull queue with error suppression
+const lpQueue = new Bull('lp-aggregation', redisUrl, {
+  redis: {
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null,
+    enableOfflineQueue: false,
+  }
+});
+
+// Suppress Bull Redis errors
+lpQueue.on('error', () => {
+  // Silently ignore queue errors when Redis is unavailable
+});
 const provider = new ethers.JsonRpcProvider(
   process.env.RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo'
 );
