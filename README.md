@@ -151,10 +151,11 @@ cd frontend && npm test
 
 ## Documentation
 
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Docker Quick Start](docs/DOCKER_QUICK_START.md)
-- [API Reference](docs/API_QUICK_REFERENCE.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Documentation](docs/Documentation.md)
+- [Deployment Guide](docs/Deployment Guide.md)
+- [Docker Quick Start](docs/Docker Quick Start.md)
+- [API Reference](docs/API Reference.md)
+- [Troubleshooting](docs/Troubleshooting.md)
 
 ## Contributing
 
