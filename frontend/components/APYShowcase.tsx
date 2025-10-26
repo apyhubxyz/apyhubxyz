@@ -5,28 +5,57 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { FaEthereum } from 'react-icons/fa'
 import { SiPolygon, SiBinance } from 'react-icons/si'
-import apiClient, { Pool } from '@/lib/api'
+import apiClient from '@/lib/api'
 
 const APYShowcase = () => {
-  const { data: pools, isLoading } = useQuery({
-    queryKey: ['topPools'],
-    queryFn: () => apiClient.pools.getTop(9),
-    refetchInterval: 30000, // Refresh every 30 seconds
-    refetchOnWindowFocus: false,
+  // Use the same positions endpoint that pools page uses for real data
+  const { data: poolsResponse, isLoading, error } = useQuery({
+    queryKey: ['topPositions'],
+    queryFn: async () => {
+      // Fetch real positions from DefiLlama via positions endpoint
+      const response = await apiClient.positions.getAllOpportunities({
+        minAPY: 50, // Get high APY pools (50%+)
+        minTVL: 500000, // Minimum $500k TVL for quality
+        limit: 30, // Get top 30 to have more options
+      });
+      // Sort by APY to ensure highest APY pools are first
+      if (response?.data) {
+        response.data.sort((a: any, b: any) => {
+          const apyA = a.totalAPY || a.apy || a.supplyAPY || 0;
+          const apyB = b.totalAPY || b.apy || b.supplyAPY || 0;
+          return apyB - apyA; // Descending order
+        });
+      }
+      return response;
+    },
+    refetchInterval: 60000, // Auto refresh every minute
+    refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    staleTime: 30000, // Data considered fresh for 30 seconds
   })
+  
+  // Extract pools data from response
+  const pools = poolsResponse?.data || []
 
   const getChainIcon = (chain: string) => {
-    switch (chain.toLowerCase()) {
+    const chainName = chain?.toLowerCase() || 'ethereum'
+    switch (chainName) {
       case 'ethereum':
+      case 'eth':
         return <FaEthereum />
       case 'polygon':
+      case 'matic':
         return <SiPolygon />
       case 'bsc':
       case 'binance':
+      case 'bnb':
         return <SiBinance />
       case 'arbitrum':
+      case 'arb':
         return <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">A</div>
       case 'optimism':
+      case 'op':
         return <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-xs font-bold">O</div>
       default:
         return <FaEthereum />
@@ -41,23 +70,10 @@ const APYShowcase = () => {
     return `$${value.toFixed(2)}`
   }
 
-  // Group pools by protocol
-  const groupedPools = pools?.reduce((acc, pool) => {
-    const protocolName = pool.protocol?.name || 'Unknown'
-    if (!acc[protocolName]) {
-      acc[protocolName] = {
-        name: protocolName,
-        chain: pool.protocol?.chain || 'ethereum',
-        pools: [],
-      }
-    }
-    if (acc[protocolName].pools.length < 3) {
-      acc[protocolName].pools.push(pool)
-    }
-    return acc
-  }, {} as Record<string, { name: string; chain: string; pools: Pool[] }>)
-
-  const protocolsArray = groupedPools ? Object.values(groupedPools).slice(0, 3) : []
+  // Get pools dynamically - all data from API
+  const topPools = pools || []
+  const displayLimit = Math.min(topPools.length, 12) // Show up to 12 pools
+  const displayPools = topPools.slice(0, displayLimit)
 
   return (
     <section id="protocols" className="py-20 relative overflow-hidden">
@@ -69,117 +85,194 @@ const APYShowcase = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-purple-500 font-semibold text-sm uppercase tracking-wider">Top Yields</span>
+          <span className="text-purple-500 font-semibold text-sm uppercase tracking-wider">Live Yields</span>
           <h2 className="text-4xl md:text-5xl font-bold mt-4 mb-6">
             <span className="text-brown-800 dark:text-brown-100">Best APY Rates</span>{' '}
             <span className="gradient-text">Right Now</span>
           </h2>
           <p className="text-lg text-brown-600 dark:text-brown-300 max-w-3xl mx-auto">
-            Real-time data from top DeFi protocols. Find the best opportunities for your assets.
+            {pools && pools.length > 0
+              ? `Showing ${displayPools.length} highest APY opportunities${
+                  displayPools[0] && (displayPools[0].totalAPY || displayPools[0].apy) > 1000
+                    ? ` (up to ${Math.round(displayPools[0].totalAPY || displayPools[0].apy || 0)}% APY!)`
+                    : ''
+                }`
+              : 'Discovering the best yield opportunities across DeFi protocols'
+            }
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-12">
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-center">
+            Unable to load pools. Please try again later.
+          </div>
+        )}
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {isLoading ? (
-            [...Array(3)].map((_, i) => (
+            [...Array(Math.min(displayLimit || 6, 6))].map((_, i) => (
               <div
                 key={i}
-                className="glass rounded-2xl p-6 border border-brown-200/20 dark:border-brown-800/20 animate-pulse"
+                className="glass rounded-2xl p-5 border border-brown-200/20 dark:border-brown-800/20 animate-pulse"
               >
-                <div className="h-16 bg-brown-200 dark:bg-brown-700 rounded mb-4"></div>
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, j) => (
-                    <div key={j} className="h-16 bg-brown-200 dark:bg-brown-700 rounded"></div>
-                  ))}
-                </div>
+                <div className="h-12 bg-brown-200/50 dark:bg-brown-700/50 rounded mb-4"></div>
+                <div className="h-24 bg-brown-200/50 dark:bg-brown-700/50 rounded"></div>
               </div>
             ))
-          ) : protocolsArray.length > 0 ? (
-            protocolsArray.map((protocol, protocolIndex) => (
+          ) : displayPools.length > 0 ? (
+            displayPools.map((pool: any, index: number) => (
               <motion.div
-                key={protocol.name}
+                key={pool.id || index}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: protocolIndex * 0.1 }}
+                transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.3) }}
                 viewport={{ once: true }}
-                className="glass rounded-2xl p-6 border border-brown-200/20 dark:border-brown-800/20"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-semibold text-brown-800 dark:text-brown-100">
-                      {protocol.name}
-                    </h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-2xl text-purple-500">{getChainIcon(protocol.chain)}</span>
-                      <span className="text-sm text-brown-600 dark:text-brown-300 capitalize">
-                        {protocol.chain}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-brown-400 to-purple-400 rounded-full opacity-20"></div>
-                </div>
-
-                <div className="space-y-4">
-                  {protocol.pools.map((pool, poolIndex) => (
-                    <Link key={pool.id} href={`/pool/${pool.id}`}>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.4, delay: protocolIndex * 0.1 + poolIndex * 0.05 }}
-                        viewport={{ once: true }}
-                        className="flex items-center justify-between p-3 rounded-xl hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-brown-300 to-purple-300 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                            {pool.asset.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-brown-800 dark:text-brown-100">
-                              {pool.asset}
-                            </div>
-                            <div className="text-xs text-brown-600 dark:text-brown-400">
-                              TVL: {formatTVL(pool.tvl)}
-                            </div>
-                          </div>
+                <Link href={`/pool/${pool.id}`}>
+                  <div className="glass rounded-2xl p-5 border border-brown-200/20 dark:border-brown-800/20 hover:border-purple-400/30 dark:hover:border-purple-500/30 transition-all duration-300 cursor-pointer h-full">
+                    {/* Protocol Header */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-2xl text-purple-500">
+                          {getChainIcon(pool.protocol?.chain || 'ethereum')}
+                        </span>
+                        <div>
+                          <h3 className="font-semibold text-brown-800 dark:text-brown-100 text-sm">
+                            {pool.protocol?.name || 'Protocol'}
+                          </h3>
+                          <span className="text-xs text-brown-600 dark:text-brown-400">
+                            {pool.protocol?.chain || 'ethereum'}
+                          </span>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-green-500">
-                            {pool.totalAPY.toFixed(1)}%
+                      </div>
+                      {/* Dynamic Rank Badge - Show for top performers */}
+                      {(pool.totalAPY || pool.apy || 0) > 100 || index < 3 ? (
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
+                          index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
+                          index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-400' :
+                          index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
+                          (pool.totalAPY || pool.apy || 0) > 1000 ? 'bg-gradient-to-br from-red-500 to-pink-500' :
+                          (pool.totalAPY || pool.apy || 0) > 500 ? 'bg-gradient-to-br from-purple-500 to-indigo-500' :
+                          'bg-gradient-to-br from-purple-400 to-purple-600'
+                        }`}>
+                          {index < 3 ? index + 1 :
+                           (pool.totalAPY || pool.apy || 0) > 1000 ? '🔥' :
+                           (pool.totalAPY || pool.apy || 0) > 500 ? '⚡' : '★'}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Pool Details */}
+                    <div className="space-y-3">
+                      <div>
+                        <div className="font-semibold text-brown-800 dark:text-brown-100 text-lg">
+                          {pool.asset || pool.name || `Pool ${index + 1}`}
+                        </div>
+                        <div className="text-xs text-brown-600 dark:text-brown-400">
+                          {pool.poolType || pool.isLoopable ? 'Loopable' : 'Standard Pool'}
+                        </div>
+                      </div>
+
+                      {/* Stats Grid - Dynamic Data */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className={`text-2xl font-bold ${
+                            (pool.totalAPY || pool.apy || 0) > 1000 ? 'text-yellow-500' :
+                            (pool.totalAPY || pool.apy || 0) > 500 ? 'text-orange-500' :
+                            (pool.totalAPY || pool.apy || 0) > 100 ? 'text-green-400' :
+                            'text-green-500'
+                          }`}>
+                            {pool.totalAPY ?
+                              pool.totalAPY > 1000 ? `${(pool.totalAPY / 1).toFixed(0)}%` : pool.totalAPY.toFixed(1) + '%' :
+                              pool.apy ?
+                                pool.apy > 1000 ? `${(pool.apy / 1).toFixed(0)}%` : pool.apy.toFixed(1) + '%' :
+                                pool.supplyAPY ? pool.supplyAPY.toFixed(1) + '%' :
+                                '0.0%'
+                            }
                           </div>
                           <div className="text-xs text-brown-600 dark:text-brown-400">APY</div>
                         </div>
-                      </motion.div>
-                    </Link>
-                  ))}
-                </div>
+                        <div>
+                          <div className="text-lg font-semibold text-brown-800 dark:text-brown-100">
+                            {formatTVL(pool.tvl || 0)}
+                          </div>
+                          <div className="text-xs text-brown-600 dark:text-brown-400">TVL</div>
+                        </div>
+                      </div>
 
-                <Link href="/pools">
-                  <button className="w-full mt-6 py-3 bg-gradient-to-r from-brown-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-[1.02]">
-                    View All Pools
-                  </button>
+                      {/* Additional Dynamic Stats if Available */}
+                      {(pool.borrowAPY || pool.rewardAPY) && (
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          {pool.borrowAPY && (
+                            <div>
+                              <span className="text-brown-600 dark:text-brown-400">Borrow: </span>
+                              <span className="text-brown-800 dark:text-brown-100">{pool.borrowAPY.toFixed(1)}%</span>
+                            </div>
+                          )}
+                          {pool.rewardAPY && (
+                            <div>
+                              <span className="text-brown-600 dark:text-brown-400">Rewards: </span>
+                              <span className="text-brown-800 dark:text-brown-100">+{pool.rewardAPY.toFixed(1)}%</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Risk Level Indicator */}
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-brown-600 dark:text-brown-400">Risk:</span>
+                        <div className="flex space-x-1">
+                          {['low', 'medium', 'high'].map((level) => (
+                            <div
+                              key={level}
+                              className={`w-2 h-2 rounded-full ${
+                                (pool.riskLevel || 'medium') === level
+                                  ? level === 'low'
+                                    ? 'bg-green-500'
+                                    : level === 'medium'
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                                  : 'bg-gray-300 dark:bg-gray-600'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs capitalize text-brown-600 dark:text-brown-400">
+                          {pool.riskLevel || 'Medium'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </Link>
               </motion.div>
             ))
-          ) : (
-            <div className="col-span-3 text-center text-brown-600 dark:text-brown-400 py-12">
-              No pools available at the moment
+          ) : !isLoading && !error ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-brown-600 dark:text-brown-400 mb-4">
+                No pools available at the moment
+              </div>
+              <Link href="/pools">
+                <button className="px-6 py-2 bg-gradient-to-r from-brown-500 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
+                  Browse All Pools
+                </button>
+              </Link>
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Data refresh indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="flex justify-center items-center space-x-2"
-        >
-          <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-          <span className="text-sm text-brown-600 dark:text-brown-300">
-            Data refreshes every 30 seconds
-          </span>
-        </motion.div>
+        {/* Dynamic View All Button - Show if more pools available */}
+        {displayPools.length > 0 && (
+          <div className="text-center">
+            <Link href="/pools">
+              <button className="px-8 py-3 bg-gradient-to-r from-brown-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all hover:scale-[1.02]">
+                {pools && pools.length > displayLimit
+                  ? `View All Pools →`
+                  : 'Explore More Pools →'
+                }
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )
