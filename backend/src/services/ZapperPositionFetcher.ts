@@ -23,19 +23,26 @@ export interface ZapperPosition {
 
 export class ZapperPositionFetcher {
   private readonly API_BASE = 'https://api.zapper.xyz/v2';
-  private readonly API_KEY: string;
+  private readonly API_KEY: string | null;
 
   constructor() {
-    if (!process.env.ZAPPER_API_KEY) {
-      throw new Error('ZAPPER_API_KEY environment variable is required');
+    // Check API key without throwing error (will handle gracefully when used)
+    if (!process.env.ZAPPER_API_KEY || process.env.ZAPPER_API_KEY === 'your_zapper_api_key_here') {
+      this.API_KEY = null;
+    } else {
+      this.API_KEY = process.env.ZAPPER_API_KEY;
     }
-    this.API_KEY = process.env.ZAPPER_API_KEY;
   }
   
   /**
    * Fetch ALL positions for a user (covers 1000+ protocols)
    */
   async fetchAllPositions(userAddress: string): Promise<ZapperPosition[]> {
+    if (!this.API_KEY) {
+      console.log('⚠️  Zapper API key not configured, using fallback...');
+      return this.fallbackToDirectQueries(userAddress);
+    }
+    
     try {
       console.log(`\n🔍 [Zapper] Fetching ALL positions for ${userAddress}...`);
       
@@ -144,5 +151,14 @@ export class ZapperPositionFetcher {
   }
 }
 
-export const zapperPositionFetcher = new ZapperPositionFetcher();
+// Lazy initialization - create instance only when needed
+let _instance: ZapperPositionFetcher | null = null;
+export const zapperPositionFetcher = {
+  fetchAllPositions: (userAddress: string) => {
+    if (!_instance) {
+      _instance = new ZapperPositionFetcher();
+    }
+    return _instance.fetchAllPositions(userAddress);
+  }
+};
 

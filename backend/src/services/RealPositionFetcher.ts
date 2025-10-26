@@ -38,11 +38,11 @@ export interface RealPosition {
 
 export class RealPositionFetcher {
   private provider: ethers.JsonRpcProvider | null;
+  private static warnedOnce = false;
 
   constructor() {
-    // Initialize provider with Alchemy RPC URL from environment
+    // Initialize provider with Alchemy RPC URL from environment (no logging here)
     if (!process.env.ALCHEMY_RPC_URL || process.env.ALCHEMY_RPC_URL.includes('YOUR_ALCHEMY_API_KEY')) {
-      console.warn('⚠️  ALCHEMY_RPC_URL not configured. Real position fetching will be disabled.');
       this.provider = null;
     } else {
       this.provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
@@ -54,7 +54,10 @@ export class RealPositionFetcher {
    */
   async fetchUniswapV3Positions(userAddress: string): Promise<RealPosition[]> {
     if (!this.provider) {
-      console.log('⚠️  Real position fetcher not configured, skipping...');
+      if (!RealPositionFetcher.warnedOnce) {
+        console.log('⚠️  Real position fetcher not configured, skipping...');
+        RealPositionFetcher.warnedOnce = true;
+      }
       return [];
     }
     try {
@@ -329,5 +332,26 @@ export class RealPositionFetcher {
   }
 }
 
-export const realPositionFetcher = new RealPositionFetcher();
+// Lazy initialization - create instance only when needed
+let _instance: RealPositionFetcher | null = null;
+export const realPositionFetcher = {
+  fetchAllPositions: (userAddress: string) => {
+    if (!_instance) {
+      _instance = new RealPositionFetcher();
+    }
+    return _instance.fetchAllPositions(userAddress);
+  },
+  fetchUniswapV3Positions: (userAddress: string) => {
+    if (!_instance) {
+      _instance = new RealPositionFetcher();
+    }
+    return _instance.fetchUniswapV3Positions(userAddress);
+  },
+  fetchAavePositions: (userAddress: string) => {
+    if (!_instance) {
+      _instance = new RealPositionFetcher();
+    }
+    return _instance.fetchAavePositions(userAddress);
+  }
+};
 

@@ -21,8 +21,6 @@ router.get('/:address', async (req: Request, res: Response) => {
         error: 'Invalid Ethereum address',
       });
     }
-
-    console.log(`👤 [DASHBOARD] Fetching YOUR positions for ${address}...`);
     
     // Multi-tier fallback strategy:
     // 1. DeBank (free, comprehensive but rate-limited)
@@ -34,37 +32,27 @@ router.get('/:address', async (req: Request, res: Response) => {
     
     // Try DeBank first
     try {
-      console.log('  → Trying DeBank API (free, 800+ protocols)...');
       positions = await deBankPositionFetcher.fetchAllPositions(address);
       
       if (positions.length > 0) {
         dataSource = 'DeBank';
-        console.log(`✅ Using DeBank: Found ${positions.length} positions`);
       } else {
         throw new Error('DeBank empty');
       }
     } catch (debankError: any) {
-      console.log(`  ✗ DeBank failed: ${debankError.message || 'unknown'}`);
-      
       // Try Zapper GraphQL as fallback
       try {
-        console.log('  → Trying Zapper GraphQL API (with key, 1000+ protocols)...');
         positions = await zapperGraphQLFetcher.fetchAllPositions(address);
         
         if (positions.length > 0) {
           dataSource = 'Zapper GraphQL';
-          console.log(`✅ Using Zapper GraphQL: Found ${positions.length} positions`);
         } else {
           throw new Error('Zapper empty');
         }
       } catch (zapperError: any) {
-        console.log(`  ✗ Zapper failed: ${zapperError.message || 'unknown'}`);
-        
         // Final fallback: Direct blockchain
-        console.log('  → Trying direct blockchain queries (Uniswap + Aave only)...');
         positions = await realPositionFetcher.fetchAllPositions(address);
         dataSource = 'Blockchain (limited)';
-        console.log(`✅ Using direct blockchain: Found ${positions.length} positions`);
       }
     }
     
@@ -85,8 +73,6 @@ router.get('/:address', async (req: Request, res: Response) => {
       acc[p.protocol].value += p.totalValueUSD;
       return acc;
     }, {} as Record<string, { count: number; value: number }>);
-    
-    console.log(`✅ [DASHBOARD] Found ${positions.length} YOUR positions (Total: $${totalValueUSD.toFixed(2)}) via ${dataSource}\n`);
 
     res.json({
       success: true,

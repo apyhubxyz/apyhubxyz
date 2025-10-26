@@ -2,6 +2,7 @@
 import Redis from 'ioredis';
 
 let redisWarningShown = false;
+let redisAvailable = false;
 
 /**
  * Create a Redis client that suppresses all errors
@@ -25,11 +26,22 @@ export function createSilentRedis(url?: string): Redis {
       console.warn('⚠️  Redis not available. Caching disabled.');
       redisWarningShown = true;
     }
+    redisAvailable = false;
     // Silently ignore all subsequent errors
+  });
+
+  // Handle successful connection
+  client.on('connect', () => {
+    redisAvailable = true;
+  });
+
+  client.on('close', () => {
+    redisAvailable = false;
   });
 
   // Try to connect but ignore failures
   client.connect().catch(() => {
+    redisAvailable = false;
     // Ignore connection failures
   });
 

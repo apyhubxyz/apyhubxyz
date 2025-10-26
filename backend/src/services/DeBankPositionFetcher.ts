@@ -35,8 +35,6 @@ export class DeBankPositionFetcher {
    */
   async fetchAllPositions(userAddress: string): Promise<DeBankPosition[]> {
     try {
-      console.log(`\n🔍 [DeBank Free API] Fetching ALL positions for ${userAddress}...`);
-      
       // Use public endpoint (NO authentication required!)
       const response = await axios.get(
         `${this.PUBLIC_API}/user/all_complex_protocol_list`,
@@ -54,8 +52,6 @@ export class DeBankPositionFetcher {
       
       const protocols = response.data || [];
       const positions: DeBankPosition[] = [];
-      
-      console.log(`  → Found ${protocols.length} protocols with positions`);
       
       // Parse each protocol's positions
       protocols.forEach((protocol: any) => {
@@ -103,13 +99,8 @@ export class DeBankPositionFetcher {
         });
       });
       
-      console.log(`✅ [DeBank] Found ${positions.length} positions across ${protocols.length} protocols`);
-      console.log(`   Protocols: ${protocols.map((p: any) => p.name).slice(0, 10).join(', ')}${protocols.length > 10 ? '...' : ''}\n`);
-      
       return positions;
     } catch (error: any) {
-      console.error(`❌ [DeBank] Error:`, error.response?.status, error.response?.statusText || error.message);
-      console.log('   → Falling back to direct blockchain queries (limited coverage)\n');
       return [];
     }
   }

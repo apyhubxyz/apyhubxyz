@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount } from 'wagmi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
@@ -81,9 +81,12 @@ export default function PortfolioPage() {
     })),
   } : null
 
-  if (error) {
-    toast.error('Failed to load portfolio')
-  }
+  // Handle error with useEffect to avoid render issues
+  useEffect(() => {
+    if (error) {
+      toast.error('Failed to load portfolio')
+    }
+  }, [error])
 
   const formatCurrency = (value: number | null | undefined) => {
     if (!value || isNaN(value)) return '$0.00'
