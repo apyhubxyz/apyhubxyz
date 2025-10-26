@@ -7,8 +7,11 @@ import Redis from 'ioredis';
 export function envioRoutes() {
   const router = Router();
 
+  if (!process.env.RPC_URL && !process.env.ALCHEMY_RPC_URL) {
+    throw new Error('RPC_URL or ALCHEMY_RPC_URL environment variable is required');
+  }
   const provider = new ethers.JsonRpcProvider(
-    process.env.RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo'
+    process.env.RPC_URL || process.env.ALCHEMY_RPC_URL
   );
   const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
   const envio = getEnvioHyperIndex(provider, {

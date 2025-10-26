@@ -2,10 +2,11 @@
 import { ethers } from 'ethers';
 import axios from 'axios';
 
-// Initialize provider with your Alchemy key
-const provider = new ethers.JsonRpcProvider(
-  'https://eth-mainnet.g.alchemy.com/v2/Qb1HjrRk7epyN-yl1MjjcZRx1r3CmSHj'
-);
+// Initialize provider with Alchemy RPC URL from environment
+if (!process.env.ALCHEMY_RPC_URL) {
+  throw new Error('ALCHEMY_RPC_URL environment variable is required');
+}
+const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
 
 // Contract ABIs for major protocols
 const UNISWAP_V3_POSITION_MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88';

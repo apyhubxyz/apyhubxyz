@@ -1,38 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { FaGithub, FaDiscord, FaTwitter, FaTelegram, FaMedium } from 'react-icons/fa'
+import { FaGithub, FaTelegram } from 'react-icons/fa'
 import Image from 'next/image'
 import Link from 'next/link'
 
 const Footer = () => {
-  const footerLinks = {
-    Product: [
-      { name: 'Features', href: '#features' },
-      { name: 'Protocols', href: '#protocols' },
-      { name: 'Benefits', href: '#benefits' },
-      { name: 'Roadmap', href: '#' },
-    ],
-    Resources: [
-      { name: 'Documentation', href: '#' },
-      { name: 'API', href: '#' },
-      { name: 'Tutorials', href: '#' },
-      { name: 'Blog', href: '#' },
-    ],
-    Company: [
-      { name: 'About', href: '#about' },
-      { name: 'Team', href: '#' },
-      { name: 'Careers', href: '#' },
-      { name: 'Contact', href: '#' },
-    ],
-    Legal: [
-      { name: 'Privacy Policy', href: '#' },
-      { name: 'Terms of Service', href: '#' },
-      { name: 'Cookie Policy', href: '#' },
-      { name: 'Disclaimer', href: '#' },
-    ],
-  }
-
   const socialLinks = [
     { icon: <FaGithub />, href: 'https://github.com/apyhubxyz', label: 'GitHub' },
     { icon: <FaTelegram />, href: 'https://t.me/apyhubxyz', label: 'Telegram' },
@@ -41,9 +14,9 @@ const Footer = () => {
   return (
     <footer id="about" className="bg-gradient-to-b from-transparent to-brown-50 dark:to-brown-950 pt-20 pb-10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Logo and description */}
-          <div className="col-span-2">
+          <div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -58,7 +31,7 @@ const Footer = () => {
                 <span className="text-xl font-bold gradient-text">Apyhub</span>
               </Link>
               <p className="text-brown-600 dark:text-brown-300 leading-relaxed">
-                Your gateway to maximizing DeFi yields. Discover, compare, and optimize 
+                Your gateway to maximizing DeFi yields. Discover, compare, and optimize
                 your investments across multiple protocols.
               </p>
             </motion.div>
@@ -80,48 +53,19 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Footer links */}
-          {Object.entries(footerLinks).map(([category, links]) => (
-            <motion.div
-              key={category}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="font-semibold text-brown-800 dark:text-brown-100 mb-4">
-                {category}
-              </h3>
-              <ul className="space-y-2">
-                {links.map((link) => (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="text-brown-600 dark:text-brown-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors text-sm"
-                    >
-                      {link.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Newsletter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          viewport={{ once: true }}
-          className="glass rounded-2xl p-8 mb-12 border border-brown-200/20 dark:border-brown-800/20"
-        >
-          <div className="grid md:grid-cols-2 gap-6 items-center">
+          {/* Newsletter - Stay Updated */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+            className="glass rounded-2xl p-8 border border-brown-200/20 dark:border-brown-800/20"
+          >
             <div>
               <h3 className="text-2xl font-semibold text-brown-800 dark:text-brown-100 mb-2">
                 Stay Updated
               </h3>
-              <p className="text-brown-600 dark:text-brown-300">
+              <p className="text-brown-600 dark:text-brown-300 mb-4">
                 Get the latest updates on new features, protocols, and yield opportunities.
               </p>
             </div>
@@ -135,8 +79,8 @@ const Footer = () => {
                 Subscribe
               </button>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Bottom bar */}
         <div className="border-t border-brown-200 dark:border-brown-800 pt-8">
