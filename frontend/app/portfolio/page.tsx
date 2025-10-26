@@ -319,7 +319,6 @@ export default function PortfolioPage() {
                       {portfolio.portfolio.positionCount}
                     </div>
                   </div>
-                  {isConnected && <ConnectButton />}
                 </div>
               </div>
             </div>

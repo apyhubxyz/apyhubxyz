@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowUpIcon } from '@heroicons/react/24/outline'
 import apiClient, { PoolFilters as PoolFiltersType } from '@/lib/api'
 import PoolFilters from '@/components/PoolFilters'
 import PoolsTable from '@/components/PoolsTable'
@@ -21,6 +21,9 @@ export default function PoolsPage() {
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [displayedCount, setDisplayedCount] = useState(20)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
 
   // Debounce search
   useEffect(() => {
@@ -49,6 +52,44 @@ export default function PoolsPage() {
 
   // Ensure data is always an array
   const data = Array.isArray(poolsResponse) ? poolsResponse : []
+  const displayedPools = data.slice(0, displayedCount)
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && displayedCount < data.length) {
+          setDisplayedCount(prev => Math.min(prev + 20, data.length))
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [displayedCount, data.length])
+
+  // Reset displayed count when filters change
+  useEffect(() => {
+    setDisplayedCount(20)
+  }, [filters, debouncedSearch])
+
+  // Handle scroll for scroll-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     if (error) {
@@ -183,14 +224,43 @@ export default function PoolsPage() {
 
         {/* Pools Table */}
         <PoolsTable
-          pools={data || []}
+          pools={displayedPools || []}
           loading={isLoading}
           sortBy={filters.sortBy || 'totalAPY'}
           sortOrder={filters.sortOrder || 'desc'}
           onSort={handleSort}
         />
 
+        {/* Load more trigger */}
+        {!isLoading && displayedCount < data.length && (
+          <div ref={loadMoreRef} className="py-8 text-center">
+            <div className="inline-flex items-center gap-2 text-brown-600 dark:text-brown-400">
+              <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              <span>Loading more pools...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Show total count */}
+        {!isLoading && data.length > 0 && (
+          <div className="mt-6 text-center text-brown-600 dark:text-brown-400">
+            Showing {displayedCount} of {data.length} pools
+          </div>
+        )}
+
       </main>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 left-8 z-50 p-4 bg-gradient-to-br from-brown-500 to-purple-500 hover:from-brown-600 hover:to-purple-600 text-white rounded-full shadow-2xl transform transition-all duration-300 hover:scale-110 group"
+          aria-label="Scroll to top"
+        >
+          <ArrowUpIcon className="w-6 h-6 transition-transform group-hover:-translate-y-1" />
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brown-400 to-purple-400 blur-lg opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
+        </button>
+      )}
 
       <Footer />
     </div>
