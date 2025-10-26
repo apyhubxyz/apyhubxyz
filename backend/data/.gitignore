@@ -1,0 +1,5 @@
+# Keep training data in git for deployment
+# Only ignore large cache files or temporary data
+*.cache
+*.tmp
+*.log

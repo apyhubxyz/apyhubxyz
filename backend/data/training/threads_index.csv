@@ -1,0 +1,5 @@
+thread_id,author,topic,assets,est_apr,risk,source
+1958365005000417583,@phtevenstrong,ETH Super‑Basis,ETH,~21.5%,funding flips; rebalance on pumps,Strategies.pdf
+1935811897527349571,@phtevenstrong,NAV checks (cUSDO),stables,n/a,execution; thin liquidity,Strategies.pdf
+1846150754270068913,@bjnpck,Liquity Forkonomics for L2s,stables,n/a,ecosystem execution,Strategies.pdf
+1685242462531411968,@bjnpck,LUSD market‑neutral notes,ETH/LUSD,varies,oracle/liquidation,Strategies.pdf
