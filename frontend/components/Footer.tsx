@@ -142,7 +142,7 @@ const Footer = () => {
         <div className="border-t border-brown-200 dark:border-brown-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-brown-600 dark:text-brown-300 text-sm text-center md:text-left">
-              © 2025 Apyhub. All rights reserved. Built with ❤️ for the DeFi community.
+              © 2025 Apyhub. All rights reserved.
             </div>
             <div className="flex items-center space-x-6 text-sm">
               <a href="https://apyhub.xyz" className="text-brown-600 dark:text-brown-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
@@ -150,7 +150,7 @@ const Footer = () => {
               </a>
               <span className="text-brown-400">•</span>
               <span className="text-brown-600 dark:text-brown-300">
-                Powered by Web3
+                Powered by DeFi
               </span>
             </div>
           </div>

@@ -17,7 +17,7 @@ export default function PoolsPage() {
     sortBy: 'totalAPY',
     sortOrder: 'desc',
     page: 1,
-    limit: 20,
+    limit: 50000,
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -190,27 +190,6 @@ export default function PoolsPage() {
           onSort={handleSort}
         />
 
-        {/* Pagination */}
-        {data && data.length >= (filters.limit || 20) && (
-          <div className="flex justify-center gap-4 mt-8">
-            <button
-              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) - 1 }))}
-              disabled={filters.page === 1}
-              className="px-6 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-all duration-300 text-brown-700 dark:text-brown-300"
-            >
-              Previous
-            </button>
-            <div className="flex items-center px-4 text-brown-700 dark:text-brown-300 font-medium">
-              Page <span className="mx-2 px-3 py-1 glass-dark rounded-lg font-bold text-brown-900 dark:text-brown-100">{filters.page || 1}</span>
-            </div>
-            <button
-              onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
-              className="px-6 py-3 glass-dark border border-brown-300 dark:border-brown-600 rounded-xl font-medium hover:bg-brown-50 dark:hover:bg-brown-900/30 transition-all duration-300 text-brown-700 dark:text-brown-300"
-            >
-              Next
-            </button>
-          </div>
-        )}
       </main>
 
       <Footer />

@@ -159,26 +159,54 @@ router.get('/stats', async (req: Request, res: Response) => {
 
 /**
  * @route GET /api/positions/protocols
- * @description Get list of available protocols
+ * @description Get list of available protocols from DefiLlama (1000+ protocols)
  */
 router.get('/protocols', async (req: Request, res: Response) => {
   try {
-    const protocols = [
-      { name: 'Aave', logo: '/logos/aave.svg', tvl: '5.2B', chains: [1, 10, 42161, 137] },
-      { name: 'Uniswap V3', logo: '/logos/uniswap.svg', tvl: '3.8B', chains: [1, 10, 42161, 137] },
-      { name: 'Compound', logo: '/logos/compound.svg', tvl: '2.1B', chains: [1, 137] },
-      { name: 'Euler', logo: '/logos/euler.svg', tvl: '450M', chains: [1] },
-      { name: 'Morpho', logo: '/logos/morpho.svg', tvl: '890M', chains: [1, 8453] },
-      { name: 'Silo', logo: '/logos/silo.svg', tvl: '120M', chains: [1, 42161] },
-      { name: 'Yearn', logo: '/logos/yearn.svg', tvl: '340M', chains: [1, 10] },
-      { name: 'Curve', logo: '/logos/curve.svg', tvl: '4.5B', chains: [1, 10, 137] },
-      { name: 'Balancer', logo: '/logos/balancer.svg', tvl: '1.2B', chains: [1, 137, 42161] },
-      { name: 'Pendle', logo: '/logos/pendle.svg', tvl: '680M', chains: [1, 42161] },
-    ];
+    // Fetch pools from DefiLlama to extract unique protocols
+    const pools = await defiLlamaAggregator.getTopPools({
+      minAPY: 0,
+      minTVL: 100000, // $100k minimum for quality protocols
+      chains: ['Ethereum', 'Optimism', 'Arbitrum', 'Polygon', 'Base'],
+      limit: 500, // Fetch more to get diverse protocols
+    });
+    
+    // Extract unique protocols with their data
+    const protocolMap = new Map();
+    pools.forEach(pool => {
+      if (!protocolMap.has(pool.project)) {
+        protocolMap.set(pool.project, {
+          id: pool.project.toLowerCase().replace(/\s+/g, '-'),
+          name: pool.project,
+          slug: pool.project.toLowerCase().replace(/\s+/g, '-'),
+          logo: undefined,
+          tvl: pool.tvlUsd,
+          chain: pool.chain,
+          audited: false,
+          poolCount: 1,
+        });
+      } else {
+        // Update TVL and pool count
+        const existing = protocolMap.get(pool.project);
+        existing.tvl += pool.tvlUsd;
+        existing.poolCount += 1;
+      }
+    });
+    
+    // Convert to array and sort by TVL
+    const protocols = Array.from(protocolMap.values())
+      .sort((a, b) => b.tvl - a.tvl)
+      .map(p => ({
+        ...p,
+        tvl: `$${(p.tvl / 1e9).toFixed(2)}B`,
+      }));
+
+    console.log(`✅ Found ${protocols.length} unique protocols from DefiLlama`);
 
     res.json({
       success: true,
-      data: protocols
+      data: protocols,
+      count: protocols.length,
     });
   } catch (error: any) {
     console.error('Error fetching protocols:', error);
