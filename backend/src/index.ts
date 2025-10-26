@@ -25,7 +25,13 @@ import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 
 // Load .env from root directory
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+// When using tsx, __dirname points to /backend/src, so we go up 2 levels to reach project root
+const envPath = path.resolve(process.cwd(), '..', '.env');
+dotenv.config({ path: envPath });
+
+// Log environment for debugging
+console.log('📁 Loading .env from:', envPath);
+console.log('🔑 OpenAI API Key:', process.env.OPENAI_API_KEY ? '✅ Loaded' : '❌ Missing');
 
 const app = express();
 const PORT = process.env.PORT || 3001;

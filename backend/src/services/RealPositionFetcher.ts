@@ -2,12 +2,6 @@
 import { ethers } from 'ethers';
 import axios from 'axios';
 
-// Initialize provider with Alchemy RPC URL from environment
-if (!process.env.ALCHEMY_RPC_URL) {
-  throw new Error('ALCHEMY_RPC_URL environment variable is required');
-}
-const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
-
 // Contract ABIs for major protocols
 const UNISWAP_V3_POSITION_MANAGER = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88';
 const AAVE_V3_POOL = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2';
@@ -43,15 +37,31 @@ export interface RealPosition {
 }
 
 export class RealPositionFetcher {
+  private provider: ethers.JsonRpcProvider | null;
+
+  constructor() {
+    // Initialize provider with Alchemy RPC URL from environment
+    if (!process.env.ALCHEMY_RPC_URL || process.env.ALCHEMY_RPC_URL.includes('YOUR_ALCHEMY_API_KEY')) {
+      console.warn('⚠️  ALCHEMY_RPC_URL not configured. Real position fetching will be disabled.');
+      this.provider = null;
+    } else {
+      this.provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
+    }
+  }
+
   /**
    * Fetch REAL Uniswap V3 positions for an address
    */
   async fetchUniswapV3Positions(userAddress: string): Promise<RealPosition[]> {
+    if (!this.provider) {
+      console.log('⚠️  Real position fetcher not configured, skipping...');
+      return [];
+    }
     try {
       const positionManager = new ethers.Contract(
         UNISWAP_V3_POSITION_MANAGER,
         POSITION_MANAGER_ABI,
-        provider
+        this.provider
       );
 
       // Get number of positions
@@ -112,8 +122,11 @@ export class RealPositionFetcher {
    * Fetch REAL Aave V3 positions
    */
   async fetchAavePositions(userAddress: string): Promise<RealPosition[]> {
+    if (!this.provider) {
+      return [];
+    }
     try {
-      const aavePool = new ethers.Contract(AAVE_V3_POOL, AAVE_POOL_ABI, provider);
+      const aavePool = new ethers.Contract(AAVE_V3_POOL, AAVE_POOL_ABI, this.provider);
       const accountData = await aavePool.getUserAccountData(userAddress);
 
       const positions: RealPosition[] = [];
@@ -259,11 +272,14 @@ export class RealPositionFetcher {
    * Get token info from contract
    */
   private async getTokenInfo(tokenAddress: string) {
+    if (!this.provider) {
+      return { symbol: 'UNKNOWN', decimals: 18 };
+    }
     try {
       const tokenContract = new ethers.Contract(
         tokenAddress,
         ['function symbol() view returns (string)', 'function decimals() view returns (uint8)'],
-        provider
+        this.provider
       );
 
       const [symbol, decimals] = await Promise.all([

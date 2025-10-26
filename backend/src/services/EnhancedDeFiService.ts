@@ -1,6 +1,7 @@
 // Enhanced DeFi Service - Unified Protocol Aggregation
 import { ethers } from 'ethers';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
+import type Redis from 'ioredis';
 import Bull from 'bull';
 import pLimit from 'p-limit';
 import PrismaService from './PrismaService';
@@ -77,11 +78,25 @@ export class EnhancedDeFiService {
     private provider: ethers.Provider,
     redisUrl?: string
   ) {
-    this.redis = new Redis(redisUrl || process.env.REDIS_URL || 'redis://localhost:6379');
+    this.redis = createSilentRedis(redisUrl);
     this.registry = new ProtocolRegistry(provider, this.redis);
-    this.updateQueue = new Bull('defi-updates', redisUrl || process.env.REDIS_URL || 'redis://localhost:6379');
+
+    const bullRedisUrl = redisUrl || process.env.REDIS_URL || 'redis://localhost:6379';
+    this.updateQueue = new Bull('defi-updates', bullRedisUrl, {
+      redis: {
+        maxRetriesPerRequest: 1,
+        retryStrategy: () => null,
+        enableOfflineQueue: false,
+      }
+    });
+
+    // Suppress Bull Redis errors
+    this.updateQueue.on('error', () => {
+      // Silently ignore queue errors when Redis is unavailable
+    });
+
     this.rateLimiter = pLimit(5); // 5 concurrent protocol fetches
-    
+
     this.initializeAdapters();
     this.setupUpdateQueue();
   }

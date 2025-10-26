@@ -3,14 +3,10 @@ import { PlatformPosition } from './platforms/BasePlatformAdapter';
 import { PendleAdapter } from './platforms/PendleAdapter';
 import { BeefyAdapter } from './platforms/BeefyAdapter';
 import { YearnAdapter } from './platforms/YearnAdapter';
-import Redis from 'ioredis';
+import { createSilentRedis } from '../utils/redis';
 
 // Initialize Redis for caching
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  retryStrategy: () => null,  // Disable retry (use in-memory fallback)
-});
+const redis = createSilentRedis();
 
 export class MultiPlatformAggregator {
   private adapters = [

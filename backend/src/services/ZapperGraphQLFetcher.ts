@@ -25,13 +25,15 @@ export interface ZapperPosition {
 
 export class ZapperGraphQLFetcher {
   private readonly GRAPHQL_ENDPOINT = 'https://public.zapper.xyz/graphql';
-  private readonly API_KEY: string;
+  private readonly API_KEY: string | null;
 
   constructor() {
-    if (!process.env.ZAPPER_API_KEY) {
-      throw new Error('ZAPPER_API_KEY environment variable is required');
+    if (!process.env.ZAPPER_API_KEY || process.env.ZAPPER_API_KEY === 'your_zapper_api_key_here') {
+      console.warn('⚠️  ZAPPER_API_KEY not configured. Zapper integration will be disabled.');
+      this.API_KEY = null;
+    } else {
+      this.API_KEY = process.env.ZAPPER_API_KEY;
     }
-    this.API_KEY = process.env.ZAPPER_API_KEY;
   }
   
   /**
@@ -39,6 +41,11 @@ export class ZapperGraphQLFetcher {
    * Covers: Extra Finance, EigenLayer, Ether.fi, Dolomite, and 1000+ more
    */
   async fetchAllPositions(userAddress: string): Promise<ZapperPosition[]> {
+    if (!this.API_KEY) {
+      console.log('⚠️  Zapper API key not configured, skipping Zapper positions...');
+      return [];
+    }
+
     try {
       console.log(`\n🔍 [Zapper GraphQL] Fetching ALL DeFi positions for ${userAddress}...`);
       
