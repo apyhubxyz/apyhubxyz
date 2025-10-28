@@ -79,7 +79,6 @@ export function useAIRecommendations() {
     },
     onError: (error) => {
       toast.error('Failed to get AI recommendation');
-      console.error('AI recommendation error:', error);
     },
   });
 }
@@ -109,7 +108,6 @@ export function useEnhancedAIChat(sessionId?: string) {
     },
     onError: (error) => {
       toast.error('Failed to send message');
-      console.error('Chat error:', error);
     },
   });
   
@@ -173,7 +171,6 @@ export function useExecuteBridge() {
     },
     onError: (error) => {
       toast.error('Bridge execution failed');
-      console.error('Bridge error:', error);
     },
   });
 }

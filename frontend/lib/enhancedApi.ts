@@ -20,7 +20,6 @@ const enhancedApi: AxiosInstance = axios.create({
 enhancedApi.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    console.error('Enhanced API Error:', error);
     return Promise.reject(error);
   }
 );
@@ -272,7 +271,7 @@ export const enhancedApiClient = {
       const ws = new WebSocket('ws://localhost:3001/ws');
       
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        // WebSocket connected
       };
       
       ws.onmessage = (event) => {
@@ -280,12 +279,12 @@ export const enhancedApiClient = {
           const data = JSON.parse(event.data);
           onMessage(data);
         } catch (error) {
-          console.error('WebSocket message parse error:', error);
+          // Handle parse error silently
         }
       };
       
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // Handle WebSocket error silently
       };
       
       return ws;

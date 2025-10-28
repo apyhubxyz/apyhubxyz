@@ -267,6 +267,41 @@ model AiChat {
 // CACHE & UTILITY MODELS
 // ==============================================
 
+// Bridge Transaction History
+model BridgeTransaction {
+  id              String   @id @default(uuid())
+  userAddress     String
+  status          String   // 'pending' | 'confirming' | 'completed' | 'failed'
+  fromChainId     Int
+  fromChainName   String
+  fromChainIcon   String?
+  fromChainExplorer String?
+  toChainId       Int
+  toChainName     String
+  toChainIcon     String?
+  toChainExplorer String?
+  tokenSymbol     String
+  tokenName       String
+  tokenIcon       String?
+  amount          String
+  usdValue        Float
+  fromTxHash      String
+  toTxHash        String?
+  bridgeProtocol  String
+  mode            String   // 'bridge' | 'bridge-execute'
+  executeAction   String?
+  gasCost         String
+  bridgeFee       String
+  estimatedCompletion Int?
+  timestamp       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userAddress])
+  @@index([status])
+  @@index([timestamp])
+  @@index([fromChainId, toChainId])
+}
+
 // Cache for API responses
 model ApiCache {
   id        String   @id @default(uuid())

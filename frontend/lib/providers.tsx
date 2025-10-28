@@ -7,6 +7,7 @@ import { config } from './wagmi'
 import { ThemeProvider, useTheme } from './darkmode'
 import { NexusProvider } from '@avail-project/nexus-widgets'
 import { WalletBridge } from '@/components/WalletBridge'
+import { NexusErrorBoundary } from '@/components/NexusErrorBoundary'
 import { useState } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 
@@ -71,16 +72,18 @@ function RainbowKitWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <RainbowKitProvider theme={customTheme}>
-      <NexusProvider
-        config={{
-          debug: false,        // Set to true only for verbose logs in development
-          network: 'mainnet',  // CRITICAL: Must be 'mainnet' for production
-        }}
-      >
-        {/* WalletBridge forwards wallet provider to Nexus - CRITICAL for bridge functionality */}
-        <WalletBridge />
-        {children}
-      </NexusProvider>
+      <NexusErrorBoundary>
+        <NexusProvider
+          config={{
+            debug: false,        // Set to true only for verbose logs in development
+            network: 'mainnet',  // CRITICAL: Must be 'mainnet' for production
+          }}
+        >
+          {/* WalletBridge forwards wallet provider to Nexus - CRITICAL for bridge functionality */}
+          <WalletBridge />
+          {children}
+        </NexusProvider>
+      </NexusErrorBoundary>
     </RainbowKitProvider>
   )
 }

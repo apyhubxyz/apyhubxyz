@@ -2,8 +2,10 @@ import express, { Request, Response } from 'express'
 import { getAvailNexusBridge, SupportedChain } from '../services/AvailNexusBridge'
 import { ethers } from 'ethers'
 import { z } from 'zod'
+import { PrismaClient } from '@prisma/client'
 
 const router = express.Router()
+const prisma = new PrismaClient()
 
 // Initialize providers for supported chains
 const providers = new Map<SupportedChain, ethers.Provider>([
@@ -145,6 +147,40 @@ router.post('/execute', async (req: Request, res: Response) => {
       Math.floor(Math.random() * 16).toString(16)
     ).join('')
 
+    // Save transaction to database
+    try {
+      await prisma.bridgeTransaction.create({
+        data: {
+          userAddress: validated.recipient.toLowerCase(),
+          status: 'completed',
+          fromChainId: validated.fromChain,
+          fromChainName: chainIdToName[validated.fromChain] || 'Unknown',
+          fromChainIcon: '/chains/ethereum.png', // Default icon
+          fromChainExplorer: 'https://etherscan.io', // Default explorer
+          toChainId: validated.toChain,
+          toChainName: chainIdToName[validated.toChain] || 'Unknown',
+          toChainIcon: '/chains/ethereum.png', // Default icon
+          toChainExplorer: 'https://etherscan.io', // Default explorer
+          tokenSymbol: validated.token.toUpperCase(),
+          tokenName: validated.token.toUpperCase(),
+          tokenIcon: `/tokens/${validated.token.toLowerCase()}.svg`,
+          amount: validated.amount,
+          usdValue: 0, // Will be calculated based on token price
+          fromTxHash: mockTxHash,
+          toTxHash: null,
+          bridgeProtocol: 'Avail Nexus',
+          mode: validated.mode,
+          executeAction: validated.executeAction || null,
+          gasCost: '0.005',
+          bridgeFee: '0.003',
+          estimatedCompletion: 300, // 5 minutes
+        }
+      })
+    } catch (dbError) {
+      console.error('Failed to save bridge transaction to database:', dbError)
+      // Continue with response even if DB save fails
+    }
+
     res.json({
       success: true,
       intentId,
@@ -183,34 +219,58 @@ router.get('/status/:bridgeId', async (req: Request, res: Response) => {
 router.get('/history/:address', async (req: Request, res: Response) => {
   try {
     const { address } = req.params
-    
+
     // Validate address format
     if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
       return res.status(400).json({ error: 'Invalid address format' })
     }
 
-    // In production, this would fetch from database
-    // For demo, return mock data
-    const mockHistory = [
-      {
-        id: `tx-${Date.now()}-1`,
-        status: 'completed',
-        fromChain: { id: 1, name: 'Ethereum', icon: '🔷', explorer: 'https://etherscan.io' },
-        toChain: { id: 42161, name: 'Arbitrum', icon: '🔵', explorer: 'https://arbiscan.io' },
-        token: { symbol: 'ETH', name: 'Ethereum', icon: '🔷' },
-        amount: '2.5',
-        usdValue: 4250,
-        fromTxHash: '0x1234567890abcdef',
-        toTxHash: '0xfedcba0987654321',
-        bridgeProtocol: 'Avail Nexus',
-        mode: 'bridge',
-        timestamp: Date.now() - 3600000,
-        gasCost: '0.005',
-        bridgeFee: '0.003'
-      }
-    ]
+    // Fetch from database
+    const transactions = await prisma.bridgeTransaction.findMany({
+      where: {
+        userAddress: address.toLowerCase()
+      },
+      orderBy: {
+        timestamp: 'desc'
+      },
+      take: 50 // Limit to 50 most recent transactions
+    })
 
-    res.json(mockHistory)
+    // Transform to match frontend expected format
+    const formattedHistory = transactions.map(tx => ({
+      id: tx.id,
+      status: tx.status,
+      fromChain: {
+        id: tx.fromChainId,
+        name: tx.fromChainName,
+        icon: tx.fromChainIcon || '🔷',
+        explorer: tx.fromChainExplorer || 'https://etherscan.io'
+      },
+      toChain: {
+        id: tx.toChainId,
+        name: tx.toChainName,
+        icon: tx.toChainIcon || '🔷',
+        explorer: tx.toChainExplorer || 'https://etherscan.io'
+      },
+      token: {
+        symbol: tx.tokenSymbol,
+        name: tx.tokenName,
+        icon: tx.tokenIcon || '🔷'
+      },
+      amount: tx.amount,
+      usdValue: tx.usdValue,
+      fromTxHash: tx.fromTxHash,
+      toTxHash: tx.toTxHash,
+      bridgeProtocol: tx.bridgeProtocol,
+      mode: tx.mode,
+      executeAction: tx.executeAction,
+      timestamp: tx.timestamp.getTime(),
+      gasCost: tx.gasCost,
+      bridgeFee: tx.bridgeFee,
+      estimatedCompletion: tx.estimatedCompletion
+    }))
+
+    res.json(formattedHistory)
   } catch (error) {
     console.error('Error fetching bridge history:', error)
     res.status(500).json({ error: 'Failed to fetch bridge history' })
