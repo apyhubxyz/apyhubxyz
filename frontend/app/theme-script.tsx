@@ -6,9 +6,7 @@ export function ThemeScript() {
         if (savedTheme === 'dark' || savedTheme === 'light') {
           return savedTheme;
         }
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-          return 'dark';
-        }
+        // Default to light mode instead of checking system preference
         return 'light';
       }
       

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
-import BridgeWidget from '../../components/BridgeWidget'
+import NexusBridgeWidget from '../../components/NexusBridgeWidget'
 import UnifiedBalance from '../../components/UnifiedBalance'
 import BridgeHistory from '../../components/BridgeHistory'
 import { useAccount } from 'wagmi'
@@ -102,7 +102,7 @@ export default function BridgePage() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <BridgeWidget />
+                <NexusBridgeWidget />
               </motion.div>
             )}
 

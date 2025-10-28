@@ -135,6 +135,58 @@ export class AvailNexusBridge extends EventEmitter {
     userAddress: string
   ): Promise<BridgeRoute[]> {
     try {
+      // For now, return mock routes instead of real API calls
+      // This is a temporary solution until proper API keys are configured
+      const mockRoutes: BridgeRoute[] = [
+        {
+          id: `mock-nexus-${Date.now()}`,
+          fromChain,
+          toChain,
+          fromToken: tokenAddress,
+          toToken: tokenAddress,
+          bridgeProtocol: 'Avail Nexus',
+          estimatedTime: 180, // 3 minutes
+          gasCost: BigInt('5000000000000000'), // 0.005 ETH
+          bridgeFee: BigInt('3000000000000000'), // 0.003 ETH
+          slippage: 0.3,
+          minAmount: BigInt('1000000000000000'), // 0.001 ETH
+          maxAmount: BigInt('100000000000000000000'), // 100 ETH
+        },
+        {
+          id: `mock-stargate-${Date.now()}`,
+          fromChain,
+          toChain,
+          fromToken: tokenAddress,
+          toToken: tokenAddress,
+          bridgeProtocol: 'Stargate',
+          estimatedTime: 300, // 5 minutes
+          gasCost: BigInt('4000000000000000'), // 0.004 ETH
+          bridgeFee: BigInt('2500000000000000'), // 0.0025 ETH
+          slippage: 0.2,
+          minAmount: BigInt('1000000000000000'), // 0.001 ETH
+          maxAmount: BigInt('100000000000000000000'), // 100 ETH
+        },
+        {
+          id: `mock-hop-${Date.now()}`,
+          fromChain,
+          toChain,
+          fromToken: tokenAddress,
+          toToken: tokenAddress,
+          bridgeProtocol: 'Hop Protocol',
+          estimatedTime: 420, // 7 minutes
+          gasCost: BigInt('3500000000000000'), // 0.0035 ETH
+          bridgeFee: BigInt('2000000000000000'), // 0.002 ETH
+          slippage: 0.25,
+          minAmount: BigInt('1000000000000000'), // 0.001 ETH
+          maxAmount: BigInt('50000000000000000000'), // 50 ETH
+        },
+      ];
+      
+      // Sort by total cost (gas + fees) and speed
+      return this.rankRoutes(mockRoutes, amount);
+      
+      // Uncomment below when real API keys are available
+      /*
       // Query multiple bridge aggregators in parallel
       const routePromises = Object.entries(this.BRIDGE_AGGREGATORS).map(
         async ([name, url]) => {
@@ -158,8 +210,14 @@ export class AvailNexusBridge extends EventEmitter {
         .filter(r => r !== null)
         .flat();
       
+      // If no real routes found, return mock routes as fallback
+      if (allRoutes.length === 0) {
+        return mockRoutes;
+      }
+      
       // Sort by total cost (gas + fees) and speed
       return this.rankRoutes(allRoutes, amount);
+      */
     } catch (error) {
       console.error('Failed to get bridge routes:', error);
       throw error;
@@ -245,17 +303,84 @@ export class AvailNexusBridge extends EventEmitter {
       // Create quote
       const quote = await this.createQuote(bestRoute, intent.amount);
       
+      // MOCK IMPLEMENTATION - Replace with real API call when available
+      // For now, return a mock response instead of calling the API
+      const mockIntentId = `intent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log('Mock Bridge Intent Created:', {
+        intentId: mockIntentId,
+        fromChain: intent.fromChain,
+        toChain: intent.toChain,
+        amount: intent.amount.toString(),
+        route: bestRoute.bridgeProtocol
+      });
+      
+      // Store intent locally for tracking
+      const bridgeTransaction: BridgeTransaction = {
+        hash: `0x${Math.random().toString(36).substr(2, 64)}`,
+        status: 'pending',
+        fromChain: intent.fromChain,
+        toChain: intent.toChain,
+        bridgeId: mockIntentId,
+        timestamp: Date.now(),
+        estimatedCompletion: Date.now() + bestRoute.estimatedTime * 1000,
+      };
+      
+      this.pendingTransactions.set(mockIntentId, bridgeTransaction);
+      
+      // Simulate successful bridge after delay
+      setTimeout(() => {
+        const tx = this.pendingTransactions.get(mockIntentId);
+        if (tx) {
+          tx.status = 'completed';
+          tx.toTxHash = `0x${Math.random().toString(36).substr(2, 64)}`;
+          this.emit('bridgeStatusUpdate', tx);
+        }
+      }, bestRoute.estimatedTime * 1000);
+      
+      return {
+        intentId: mockIntentId,
+        quote,
+      };
+      
+      // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+      /*
+      // Convert BigInt values to strings for JSON serialization
+      const serializedIntent = {
+        ...intent,
+        amount: intent.amount.toString(),
+        execution: intent.execution
+      };
+      
+      const serializedRoute = {
+        ...bestRoute,
+        gasCost: bestRoute.gasCost.toString(),
+        bridgeFee: bestRoute.bridgeFee.toString(),
+        minAmount: bestRoute.minAmount.toString(),
+        maxAmount: bestRoute.maxAmount.toString()
+      };
+      
+      const serializedQuote = {
+        ...quote,
+        route: serializedRoute,
+        inputAmount: quote.inputAmount.toString(),
+        outputAmount: quote.outputAmount.toString(),
+        totalGasCost: quote.totalGasCost.toString(),
+        totalFees: quote.totalFees.toString()
+      };
+      
       // Register intent with Avail Nexus
       const { data } = await this.axios.post('/intents', {
-        intent,
-        route: bestRoute,
-        quote,
+        intent: serializedIntent,
+        route: serializedRoute,
+        quote: serializedQuote,
       });
       
       return {
         intentId: data.intentId,
         quote,
       };
+      */
     } catch (error) {
       console.error('Failed to create bridge intent:', error);
       throw error;
@@ -294,6 +419,37 @@ export class AvailNexusBridge extends EventEmitter {
     signer: ethers.Signer
   ): Promise<BridgeTransaction> {
     try {
+      // MOCK IMPLEMENTATION - Get intent from local storage
+      const bridgeTransaction = this.pendingTransactions.get(intentId);
+      
+      if (!bridgeTransaction) {
+        throw new Error('Intent not found');
+      }
+      
+      // Simulate transaction execution
+      console.log('Mock Bridge Transaction Executing:', {
+        intentId,
+        status: 'executing'
+      });
+      
+      // Update status
+      bridgeTransaction.status = 'confirming';
+      bridgeTransaction.fromTxHash = `0x${Math.random().toString(36).substr(2, 64)}`;
+      
+      // Emit event
+      this.emit('bridgeInitiated', bridgeTransaction);
+      
+      // Simulate confirmation after delay
+      setTimeout(() => {
+        bridgeTransaction.status = 'completed';
+        bridgeTransaction.toTxHash = `0x${Math.random().toString(36).substr(2, 64)}`;
+        this.emit('bridgeCompleted', bridgeTransaction);
+      }, 10000); // 10 seconds
+      
+      return bridgeTransaction;
+      
+      // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+      /*
       // Get intent details from Avail Nexus
       const { data: intent } = await this.axios.get(`/intents/${intentId}`);
       
@@ -327,6 +483,7 @@ export class AvailNexusBridge extends EventEmitter {
       }
       
       return bridgeTransaction;
+      */
     } catch (error) {
       console.error('Failed to execute bridge intent:', error);
       throw error;
@@ -372,17 +529,27 @@ export class AvailNexusBridge extends EventEmitter {
       recipient,
     }));
     
-    // Submit to Avail Nexus for execution
-    await this.axios.post('/executions', {
+    // MOCK IMPLEMENTATION - Log execution steps instead of API call
+    console.log('Mock Execution Steps Prepared:', {
       bridgeId: bridgeTransaction.bridgeId,
       chain: toChain,
-      steps: executionPayload,
+      steps: executionPayload
     });
     
     this.emit('executionPrepared', {
       bridgeId: bridgeTransaction.bridgeId,
       steps: executionPayload,
     });
+    
+    // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+    /*
+    // Submit to Avail Nexus for execution
+    await this.axios.post('/executions', {
+      bridgeId: bridgeTransaction.bridgeId,
+      chain: toChain,
+      steps: executionPayload,
+    });
+    */
   }
   
   // Monitor bridge status
@@ -391,6 +558,20 @@ export class AvailNexusBridge extends EventEmitter {
     const cached = this.pendingTransactions.get(bridgeId);
     if (cached) return cached;
     
+    // MOCK IMPLEMENTATION - Return mock data
+    return {
+      hash: `0x${Math.random().toString(36).substr(2, 64)}`,
+      status: 'pending',
+      fromChain: 'ethereum',
+      toChain: 'arbitrum',
+      fromTxHash: `0x${Math.random().toString(36).substr(2, 64)}`,
+      bridgeId,
+      timestamp: Date.now(),
+      estimatedCompletion: Date.now() + 180000, // 3 minutes
+    };
+    
+    // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+    /*
     try {
       // Query Avail Nexus
       const { data } = await this.axios.get(`/bridges/${bridgeId}/status`);
@@ -410,6 +591,7 @@ export class AvailNexusBridge extends EventEmitter {
       console.error(`Failed to get bridge status for ${bridgeId}:`, error);
       return null;
     }
+    */
   }
   
   // Check all pending transactions
@@ -441,6 +623,20 @@ export class AvailNexusBridge extends EventEmitter {
     operations: ExecutionStep[],
     chain: SupportedChain
   ): Promise<{ optimized: ExecutionStep[]; gasEstimate: bigint; savings: number }> {
+    // MOCK IMPLEMENTATION - Return mock optimized data
+    console.log('Mock Gas Optimization:', {
+      operations: operations.length,
+      chain
+    });
+    
+    return {
+      optimized: operations,
+      gasEstimate: BigInt(250000) * BigInt(operations.length), // Optimized estimate
+      savings: 15, // 15% savings
+    };
+    
+    // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+    /*
     try {
       // Submit to Avail Nexus for optimization
       const { data } = await this.axios.post('/optimize', {
@@ -462,6 +658,7 @@ export class AvailNexusBridge extends EventEmitter {
         savings: 0,
       };
     }
+    */
   }
   
   // Calculate price impact for large transfers
@@ -548,6 +745,20 @@ export class AvailNexusBridge extends EventEmitter {
   
   // Get bridge analytics
   async getAnalytics(): Promise<any> {
+    // MOCK IMPLEMENTATION - Return mock analytics
+    return {
+      totalVolume: '1234567890',
+      totalTransactions: 5432,
+      averageTime: 240, // 4 minutes
+      successRate: 98.5,
+      topRoutes: [
+        { from: 'ethereum', to: 'arbitrum', volume: '456789000' },
+        { from: 'ethereum', to: 'optimism', volume: '234567000' },
+      ]
+    };
+    
+    // UNCOMMENT BELOW WHEN REAL API IS AVAILABLE
+    /*
     try {
       const { data } = await this.axios.get('/analytics');
       return data;
@@ -555,6 +766,7 @@ export class AvailNexusBridge extends EventEmitter {
       console.error('Failed to get analytics:', error);
       return null;
     }
+    */
   }
 }
 

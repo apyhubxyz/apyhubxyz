@@ -2,16 +2,17 @@
   "name": "apyhub-frontend",
   "version": "0.1.0",
   "private": true,
-   "scripts": {
-     "setup": "cd .. && cp .env.example .env || echo '.env already exists'",
-     "predev": "node -e \"const fs=require('fs'); const path=require('path'); const rootEnv=path.join(__dirname,'../.env'); const localEnv=path.join(__dirname,'.env.local'); if(fs.existsSync(rootEnv)&&!fs.existsSync(localEnv)){fs.copyFileSync(rootEnv,localEnv);console.log('✓ Copied root .env to .env.local')}\"",
-     "prebuild": "node -e \"const fs=require('fs'); const path=require('path'); const rootEnv=path.join(__dirname,'../.env'); const localEnv=path.join(__dirname,'.env.local'); if(fs.existsSync(rootEnv)&&!fs.existsSync(localEnv)){fs.copyFileSync(rootEnv,localEnv);console.log('✓ Copied root .env to .env.local')}\"",
-     "dev": "next dev",
-     "build": "next build",
-     "start": "next start -H 0.0.0.0 -p $PORT",
-     "lint": "next lint"
-   },
+  "scripts": {
+    "setup": "cd .. && cp .env.example .env || echo '.env already exists'",
+    "predev": "node -e \"const fs=require('fs'); const path=require('path'); const rootEnv=path.join(__dirname,'../.env'); const localEnv=path.join(__dirname,'.env.local'); if(fs.existsSync(rootEnv)&&!fs.existsSync(localEnv)){fs.copyFileSync(rootEnv,localEnv);console.log('✓ Copied root .env to .env.local')}\"",
+    "prebuild": "node -e \"const fs=require('fs'); const path=require('path'); const rootEnv=path.join(__dirname,'../.env'); const localEnv=path.join(__dirname,'.env.local'); if(fs.existsSync(rootEnv)&&!fs.existsSync(localEnv)){fs.copyFileSync(rootEnv,localEnv);console.log('✓ Copied root .env to .env.local')}\"",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p $PORT",
+    "lint": "next lint"
+  },
   "dependencies": {
+    "@avail-project/nexus-core": "^0.0.1",
     "@heroicons/react": "^2.1.5",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@reown/appkit": "^1.8.11",

@@ -237,6 +237,64 @@ export const apiClient = {
     },
   },
 
+  // Bridge API
+  bridge: {
+    getRoutes: async (params: {
+      fromChain: string;
+      toChain: string;
+      token: string;
+      amount: string;
+      recipient: string;
+    }): Promise<any> => {
+      return api.get('/bridge/routes', { params });
+    },
+    
+    getQuote: async (data: {
+      fromChain: string;
+      toChain: string;
+      token: string;
+      amount: string;
+      recipient: string;
+    }): Promise<any> => {
+      return api.post('/bridge/quote', data);
+    },
+    
+    execute: async (data: {
+      fromChain: number;
+      toChain: number;
+      token: string;
+      amount: string;
+      recipient: string;
+      mode: 'bridge' | 'bridge-execute';
+      executeAction?: 'swap' | 'deposit' | 'stake';
+    }): Promise<any> => {
+      return api.post('/bridge/execute', data);
+    },
+    
+    getStatus: async (bridgeId: string): Promise<any> => {
+      return api.get(`/bridge/status/${bridgeId}`);
+    },
+    
+    getHistory: async (address: string): Promise<any> => {
+      return api.get(`/bridge/history/${address}`);
+    },
+    
+    getUnifiedBalance: async (address: string): Promise<any> => {
+      return api.get(`/bridge/unified-balance/${address}`);
+    },
+    
+    getAnalytics: async (): Promise<any> => {
+      return api.get('/bridge/analytics');
+    },
+    
+    optimize: async (data: {
+      operations: any[];
+      chain: string;
+    }): Promise<any> => {
+      return api.post('/bridge/optimize', data);
+    },
+  },
+
   // NEW: LP Opportunities (Pools Page - Discovery Mode)
   positions: {
     /**

@@ -3,22 +3,22 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount } from 'wagmi'
-import { 
-  FaHistory, 
-  FaCheckCircle, 
-  FaTimesCircle, 
+import {
+  FaHistory,
+  FaCheckCircle,
+  FaTimesCircle,
   FaClock,
   FaExternalLinkAlt,
   FaArrowRight,
   FaFilter,
   FaSearch
 } from 'react-icons/fa'
-import { 
+import {
   HiSparkles,
   HiLightningBolt,
   HiDownload
 } from 'react-icons/hi'
-import axios from 'axios'
+import { apiClient } from '@/lib/api'
 
 interface BridgeTransaction {
   id: string
@@ -165,15 +165,13 @@ export default function BridgeHistory() {
   const fetchTransactions = async () => {
     setIsLoading(true)
     try {
-      // In production, this would fetch real transactions from the API
-      // const response = await axios.get(`/api/bridge/history/${address}`)
-      // setTransactions(response.data)
-      
-      // For now, use mock data
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setTransactions(mockTransactions)
+      // Fetch real transactions from the API
+      const data = await apiClient.bridge.getHistory(address!)
+      setTransactions(data)
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
+      // Fallback to mock data if API fails
+      setTransactions(mockTransactions)
     } finally {
       setIsLoading(false)
     }

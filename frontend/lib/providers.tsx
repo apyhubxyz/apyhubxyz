@@ -5,6 +5,7 @@ import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider, Theme } from '@rainbow-me/rainbowkit'
 import { config } from './wagmi'
 import { ThemeProvider, useTheme } from './darkmode'
+import { NexusProvider } from '../providers/NexusProvider'
 import { useState } from 'react'
 import '@rainbow-me/rainbowkit/styles.css'
 
@@ -69,7 +70,9 @@ function RainbowKitWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <RainbowKitProvider theme={customTheme}>
-      {children}
+      <NexusProvider>
+        {children}
+      </NexusProvider>
     </RainbowKitProvider>
   )
 }
