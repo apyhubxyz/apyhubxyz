@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import NexusBridgeWidget from '../../components/NexusBridgeWidget'
+import BridgeHistory from '../../components/BridgeHistory'
 import { HiSparkles } from 'react-icons/hi'
 
 export default function BridgePage() {
@@ -55,8 +56,27 @@ export default function BridgePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
+            className="space-y-12"
           >
             <NexusBridgeWidget />
+
+            {/* Bridge History Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold mb-2">
+                  <span className="gradient-text">Your Bridge History</span>
+                </h2>
+                <p className="text-brown-600 dark:text-brown-300">
+                  Track all your cross-chain bridge transactions
+                </p>
+              </div>
+
+              <BridgeHistory />
+            </motion.div>
           </motion.div>
 
         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount } from 'wagmi'
+import Image from 'next/image'
 import {
   FaHistory,
   FaCheckCircle,
@@ -18,143 +19,18 @@ import {
   HiLightningBolt,
   HiDownload
 } from 'react-icons/hi'
-import { apiClient } from '@/lib/api'
-
-interface BridgeTransaction {
-  id: string
-  status: 'pending' | 'confirming' | 'completed' | 'failed'
-  fromChain: {
-    id: number
-    name: string
-    icon: string
-    explorer: string
-  }
-  toChain: {
-    id: number
-    name: string
-    icon: string
-    explorer: string
-  }
-  token: {
-    symbol: string
-    name: string
-    icon: string
-  }
-  amount: string
-  usdValue: number
-  fromTxHash: string
-  toTxHash?: string
-  bridgeProtocol: string
-  mode: 'bridge' | 'bridge-execute'
-  executeAction?: string
-  timestamp: number
-  estimatedCompletion?: number
-  gasCost: string
-  bridgeFee: string
-}
+import { BridgeStorage, StoredBridgeTransaction } from '@/utils/bridgeStorage'
 
 export default function BridgeHistory() {
   const { address, isConnected } = useAccount()
-  const [transactions, setTransactions] = useState<BridgeTransaction[]>([])
+  const [transactions, setTransactions] = useState<StoredBridgeTransaction[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'failed'>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTx, setSelectedTx] = useState<BridgeTransaction | null>(null)
+  const [selectedTx, setSelectedTx] = useState<StoredBridgeTransaction | null>(null)
 
-  // Mock data for demonstration
-  const mockTransactions: BridgeTransaction[] = [
-    {
-      id: 'tx-001',
-      status: 'completed',
-      fromChain: {
-        id: 1,
-        name: 'Ethereum',
-        icon: '🔷',
-        explorer: 'https://etherscan.io'
-      },
-      toChain: {
-        id: 42161,
-        name: 'Arbitrum',
-        icon: '🔵',
-        explorer: 'https://arbiscan.io'
-      },
-      token: {
-        symbol: 'ETH',
-        name: 'Ethereum',
-        icon: '🔷'
-      },
-      amount: '2.5',
-      usdValue: 4250,
-      fromTxHash: '0x1234567890abcdef',
-      toTxHash: '0xfedcba0987654321',
-      bridgeProtocol: 'Avail Nexus',
-      mode: 'bridge',
-      timestamp: Date.now() - 3600000,
-      gasCost: '0.005',
-      bridgeFee: '0.003'
-    },
-    {
-      id: 'tx-002',
-      status: 'pending',
-      fromChain: {
-        id: 137,
-        name: 'Polygon',
-        icon: '🟣',
-        explorer: 'https://polygonscan.com'
-      },
-      toChain: {
-        id: 10,
-        name: 'Optimism',
-        icon: '🔴',
-        explorer: 'https://optimistic.etherscan.io'
-      },
-      token: {
-        symbol: 'USDC',
-        name: 'USD Coin',
-        icon: '💵'
-      },
-      amount: '1000',
-      usdValue: 1000,
-      fromTxHash: '0xabcdef1234567890',
-      bridgeProtocol: 'Avail Nexus',
-      mode: 'bridge-execute',
-      executeAction: 'swap',
-      timestamp: Date.now() - 300000,
-      estimatedCompletion: Date.now() + 180000,
-      gasCost: '0.002',
-      bridgeFee: '0.001'
-    },
-    {
-      id: 'tx-003',
-      status: 'confirming',
-      fromChain: {
-        id: 8453,
-        name: 'Base',
-        icon: '🔵',
-        explorer: 'https://basescan.org'
-      },
-      toChain: {
-        id: 1,
-        name: 'Ethereum',
-        icon: '🔷',
-        explorer: 'https://etherscan.io'
-      },
-      token: {
-        symbol: 'USDT',
-        name: 'Tether',
-        icon: '💲'
-      },
-      amount: '500',
-      usdValue: 500,
-      fromTxHash: '0x9876543210fedcba',
-      bridgeProtocol: 'Avail Nexus',
-      mode: 'bridge',
-      timestamp: Date.now() - 120000,
-      estimatedCompletion: Date.now() + 60000,
-      gasCost: '0.015',
-      bridgeFee: '0.002'
-    }
-  ]
+  // No mock data - only real transactions from localStorage
+  const mockTransactions: StoredBridgeTransaction[] = []
 
   useEffect(() => {
     if (isConnected && address) {
@@ -165,12 +41,12 @@ export default function BridgeHistory() {
   const fetchTransactions = async () => {
     setIsLoading(true)
     try {
-      // Fetch real transactions from the API
-      const data = await apiClient.bridge.getHistory(address!)
-      setTransactions(data)
+      // Fetch real transactions from localStorage
+      const data = BridgeStorage.getTransactions(address!)
+      setTransactions(data.length > 0 ? data : mockTransactions)
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
-      // Fallback to mock data if API fails
+      // Fallback to mock data if storage fails
       setTransactions(mockTransactions)
     } finally {
       setIsLoading(false)
@@ -343,18 +219,40 @@ export default function BridgeHistory() {
                   {/* Left Side - Chain & Token Info */}
                   <div className="flex items-center gap-4">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full glass flex items-center justify-center text-xl">
-                        {tx.fromChain.icon}
+                      <div className={`w-10 h-10 rounded-full glass flex items-center justify-center overflow-hidden ${tx.fromChain.id === 1 ? 'bg-white p-1' : ''}`}>
+                        <Image
+                          src={tx.fromChain.icon}
+                          alt={tx.fromChain.name}
+                          width={32}
+                          height={32}
+                          className="object-contain"
+                          unoptimized
+                        />
                       </div>
                       <FaArrowRight className="mx-2 text-purple-500" />
-                      <div className="w-10 h-10 rounded-full glass flex items-center justify-center text-xl">
-                        {tx.toChain.icon}
+                      <div className={`w-10 h-10 rounded-full glass flex items-center justify-center overflow-hidden ${tx.toChain.id === 1 ? 'bg-white p-1' : ''}`}>
+                        <Image
+                          src={tx.toChain.icon}
+                          alt={tx.toChain.name}
+                          width={32}
+                          height={32}
+                          className="object-contain"
+                          unoptimized
+                        />
                       </div>
                     </div>
                     
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{tx.token.icon}</span>
+                        <div className={`relative w-6 h-6 ${tx.token.symbol === 'ETH' ? 'bg-white rounded p-0.5' : ''}`}>
+                          <Image
+                            src={tx.token.icon}
+                            alt={tx.token.symbol}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
                         <span className="font-semibold text-brown-900 dark:text-brown-100">
                           {tx.amount} {tx.token.symbol}
                         </span>
@@ -459,7 +357,15 @@ export default function BridgeHistory() {
                 <div className="glass rounded-xl p-4">
                   <div className="text-sm text-brown-600 dark:text-brown-400 mb-1">Amount</div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{selectedTx.token.icon}</span>
+                    <div className={`relative w-8 h-8 ${selectedTx.token.symbol === 'ETH' ? 'bg-white rounded p-1' : ''}`}>
+                      <Image
+                        src={selectedTx.token.icon}
+                        alt={selectedTx.token.symbol}
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
                     <span className="text-lg font-semibold text-brown-900 dark:text-brown-100">
                       {selectedTx.amount} {selectedTx.token.symbol}
                     </span>
@@ -473,7 +379,15 @@ export default function BridgeHistory() {
                   <div className="glass rounded-xl p-4">
                     <div className="text-sm text-brown-600 dark:text-brown-400 mb-1">From</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{selectedTx.fromChain.icon}</span>
+                      <div className={`relative w-6 h-6 ${selectedTx.fromChain.id === 1 ? 'bg-white rounded p-1' : ''}`}>
+                        <Image
+                          src={selectedTx.fromChain.icon}
+                          alt={selectedTx.fromChain.name}
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
                       <span className="font-medium text-brown-900 dark:text-brown-100">
                         {selectedTx.fromChain.name}
                       </span>
@@ -483,7 +397,15 @@ export default function BridgeHistory() {
                   <div className="glass rounded-xl p-4">
                     <div className="text-sm text-brown-600 dark:text-brown-400 mb-1">To</div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xl">{selectedTx.toChain.icon}</span>
+                      <div className={`relative w-6 h-6 ${selectedTx.toChain.id === 1 ? 'bg-white rounded p-1' : ''}`}>
+                        <Image
+                          src={selectedTx.toChain.icon}
+                          alt={selectedTx.toChain.name}
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
                       <span className="font-medium text-brown-900 dark:text-brown-100">
                         {selectedTx.toChain.name}
                       </span>
@@ -501,13 +423,13 @@ export default function BridgeHistory() {
                   <div className="flex justify-between">
                     <span className="text-sm text-brown-600 dark:text-brown-400">Gas Cost</span>
                     <span className="text-sm font-medium text-brown-900 dark:text-brown-100">
-                      {selectedTx.gasCost} ETH
+                      Very Low
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-brown-600 dark:text-brown-400">Bridge Fee</span>
                     <span className="text-sm font-medium text-brown-900 dark:text-brown-100">
-                      {selectedTx.bridgeFee} {selectedTx.token.symbol}
+                      Very Low
                     </span>
                   </div>
                 </div>

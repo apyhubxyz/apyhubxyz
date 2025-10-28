@@ -570,13 +570,13 @@ export default function BridgeWidget() {
               <div className="flex justify-between text-sm">
                 <span className="text-brown-600 dark:text-brown-400">Gas Cost</span>
                 <span className="text-brown-900 dark:text-brown-100 font-medium">
-                  {bestRoute.gasCost} {fromChain.nativeCurrency}
+                  Very Low
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-brown-600 dark:text-brown-400">Bridge Fee</span>
                 <span className="text-brown-900 dark:text-brown-100 font-medium">
-                  {bestRoute.bridgeFee} {selectedToken.symbol}
+                  Very Low
                 </span>
               </div>
               <div className="border-t border-brown-200 dark:border-brown-700 pt-2 flex justify-between text-sm font-semibold">

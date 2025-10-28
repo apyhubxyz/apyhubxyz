@@ -87,7 +87,7 @@ export function BridgeTriggerButton() {
             </div>
             <div className="flex justify-between">
               <span className="text-brown-600 dark:text-brown-400">Bridge Fee</span>
-              <span className="text-brown-900 dark:text-brown-100 font-medium">~0.3%</span>
+              <span className="text-brown-900 dark:text-brown-100 font-medium">Very Low</span>
             </div>
             <div className="flex justify-between">
               <span className="text-brown-600 dark:text-brown-400">Estimated Time</span>

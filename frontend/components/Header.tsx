@@ -91,45 +91,16 @@ const Header = () => {
                       }
 
                       return (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={openChainModal}
-                            type="button"
-                            className="glass border border-brown-300 dark:border-brown-700 text-brown-800 dark:text-brown-100 px-4 py-2.5 rounded-full font-semibold hover:bg-brown-50 dark:hover:bg-brown-900 transition-colors text-sm flex items-center gap-2"
-                          >
-                            {chain.hasIcon && (
-                              <div
-                                style={{
-                                  background: chain.iconBackground,
-                                  width: 20,
-                                  height: 20,
-                                  borderRadius: 999,
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {chain.iconUrl && (
-                                  <img
-                                    alt={chain.name ?? 'Chain icon'}
-                                    src={chain.iconUrl}
-                                    style={{ width: 20, height: 20 }}
-                                  />
-                                )}
-                              </div>
-                            )}
-                            {chain.name}
-                          </button>
-
-                          <button
-                            onClick={openAccountModal}
-                            type="button"
-                            className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-4 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm"
-                          >
-                            {account.displayName}
-                            {account.displayBalance
-                              ? ` (${account.displayBalance})`
-                              : ''}
-                          </button>
-                        </div>
+                        <button
+                          onClick={openAccountModal}
+                          type="button"
+                          className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-6 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm border border-brown-600"
+                        >
+                          {account.displayName}
+                          {account.displayBalance
+                            ? ` (${account.displayBalance})`
+                            : ''}
+                        </button>
                       )
                     })()}
                   </div>
