@@ -21,9 +21,6 @@ ARG NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
-# Increase Node.js memory limit for build
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-
 # Build Next.js application
 RUN npm run build
 
