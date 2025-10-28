@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance, useChainId, useSwitchChain } from 'wagmi'
 import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { parseEther, formatEther } from 'viem'
 import Image from 'next/image'
@@ -24,7 +24,7 @@ import {
   HiExternalLink
 } from 'react-icons/hi'
 import toast from 'react-hot-toast'
-import { useNexus } from '../providers/NexusProvider'
+import { useNexus } from '@avail-project/nexus-widgets'
 import { SUPPORTED_CHAINS, type SUPPORTED_CHAINS_IDS, type SUPPORTED_TOKENS } from '@avail-project/nexus-core'
 
 // Chain configuration with logos
@@ -34,7 +34,7 @@ const CHAIN_CONFIG = [
     chainId: 1,
     name: 'Ethereum',
     logo: '/chains/ethereum.png',
-    color: 'from-white to-gray-50 dark:from-gray-800 dark:to-gray-700',
+    color: 'bg-white',
     nativeCurrency: 'ETH',
     explorer: 'https://etherscan.io'
   },
@@ -86,24 +86,31 @@ const TOKENS: { symbol: SUPPORTED_TOKENS; name: string; logo: string; address: s
 export default function NexusBridgeWidget() {
   const { address, isConnected } = useAccount()
   const { openConnectModal } = useConnectModal()
-  const { nexusSDK, isInitialized, intentRefCallback, allowanceRefCallback, handleInit } = useNexus()
-  
-  // Bridge state
+  const { sdk: nexusSDK, isSdkInitialized: isInitialized, initializeSdk } = useNexus()
+  const chainId = useChainId()
+  const { switchChain } = useSwitchChain()
+
+  // Bridge state - default source chain to Base (chainId: 8453) even when wallet not connected
   const [selectedChain, setSelectedChain] = useState(CHAIN_CONFIG[0])
   const [selectedToken, setSelectedToken] = useState(TOKENS[0])
   const [amount, setAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [bridgeMode, setBridgeMode] = useState<'bridge' | 'bridge-execute'>('bridge')
-  const [executeAction, setExecuteAction] = useState<'swap' | 'deposit' | 'stake'>('swap')
+  const [hardcodedChains, setHardcodedChains] = useState<{ sourceChainId: number; destinationChainId: number } | null>(null)
+
+  // Default to Base chain (chainId: 8453) for display when wallet not connected
+  const defaultSourceChainId = 8453 // Base
+  const effectiveSourceChainId = isConnected ? chainId : defaultSourceChainId
   
   // UI state
   const [showChainSelect, setShowChainSelect] = useState(false)
+  const [showSourceChainSelect, setShowSourceChainSelect] = useState(false)
   const [showTokenSelect, setShowTokenSelect] = useState(false)
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle')
   const [txHash, setTxHash] = useState('')
   const [intentData, setIntentData] = useState<any>(null)
   const [showIntentModal, setShowIntentModal] = useState(false)
+  const [isBridgeLocked, setIsBridgeLocked] = useState(false)
   
   // Advanced settings
   const [slippage, setSlippage] = useState('0.5')
@@ -118,33 +125,23 @@ export default function NexusBridgeWidget() {
       : selectedToken.address as `0x${string}`,
   })
 
-  // Handle intent hook
-  useEffect(() => {
-    if (intentRefCallback?.current) {
-      const { intent, allow, deny } = intentRefCallback.current
-      setIntentData(intent)
-      setShowIntentModal(true)
-      
-      // Auto-approve after showing to user (for demo)
-      // In production, wait for user confirmation
-      setTimeout(() => {
-        allow()
-        setShowIntentModal(false)
-      }, 3000)
-    }
-  }, [intentRefCallback?.current])
+  // Handle intent hook - removed as it's now handled by the SDK automatically
+  
+  // Handle allowance hook - removed as it's now handled by the SDK automatically
 
-  // Handle allowance hook
+  // Auto-initialize SDK when wallet connects and auto-switch to Base if not already on it
   useEffect(() => {
-    if (allowanceRefCallback?.current) {
-      const { sources, allow, deny } = allowanceRefCallback.current
-      
-      // Auto-approve max allowances (for demo)
-      // In production, show UI for user to select
-      const allowances = sources.map(() => 'max')
-      allow(allowances)
+    if (isConnected && !isInitialized) {
+      console.log('Wallet connected, auto-initializing Nexus SDK')
+      initializeSdk()
     }
-  }, [allowanceRefCallback?.current])
+
+    // Auto-switch to Base (chainId: 8453) when wallet connects if not already on Base
+    if (isConnected && chainId !== 8453 && !hardcodedChains) {
+      console.log('Auto-switching to Base as default source chain')
+      switchChain({ chainId: 8453 })
+    }
+  }, [isConnected, isInitialized, initializeSdk, chainId, switchChain, hardcodedChains])
 
   const handleBridge = async () => {
     if (!isConnected) {
@@ -164,6 +161,12 @@ export default function NexusBridgeWidget() {
       return
     }
 
+    // Hardcode the chains when bridge starts - disconnect from wallet chain switching
+    setHardcodedChains({
+      sourceChainId: effectiveSourceChainId,
+      destinationChainId: selectedChain.chainId
+    })
+    setIsBridgeLocked(true)
     setIsLoading(true)
     setTxStatus('pending')
     
@@ -199,7 +202,11 @@ export default function NexusBridgeWidget() {
       toast.error('Bridge transaction failed: ' + (error as any).message)
     } finally {
       setIsLoading(false)
-      // intentRefCallback is managed by the provider
+      // Unlock the bridge interface and clear hardcoded chains after transaction completes (success or error)
+      setTimeout(() => {
+        setIsBridgeLocked(false)
+        setHardcodedChains(null)
+      }, 2000) // Small delay to show final status
     }
   }
 
@@ -222,177 +229,286 @@ export default function NexusBridgeWidget() {
         transition={{ duration: 0.5 }}
         className="glass-dark rounded-3xl p-8 border border-purple-200 dark:border-purple-800/50 shadow-2xl"
       >
-        {/* SDK Status */}
-        {!isInitialized && isConnected && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl border border-yellow-300 dark:border-yellow-700"
-          >
-            <div className="flex items-start gap-3">
-              <FaClock className="text-yellow-600 dark:text-yellow-400 mt-0.5 animate-spin" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                  Initializing Nexus SDK...
-                </p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
-                  This may take up to 30 seconds. If it takes longer, please try again.
-                </p>
-                <button
-                  onClick={() => {
-                    console.log('Manual retry requested')
-                    handleInit()
-                  }}
-                  className="text-xs bg-yellow-200 dark:bg-yellow-800 hover:bg-yellow-300 dark:hover:bg-yellow-700 text-yellow-900 dark:text-yellow-100 px-3 py-1.5 rounded-lg font-medium transition-colors"
-                >
-                  Retry Initialization
-                </button>
-              </div>
+
+      {/* Source Chain */}
+      <div className="mb-6">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+          Source Chain {hardcodedChains && <span className="text-orange-500 ml-2">Bridge in Progress...</span>}
+        </label>
+        <div className="relative">
+          {hardcodedChains ? (
+            <div className="glass rounded-2xl p-4 flex items-center gap-3">
+              {(() => {
+                const displayChainId = hardcodedChains.sourceChainId
+                const currentChain = CHAIN_CONFIG.find(chain => chain.chainId === displayChainId)
+                return (
+                  <>
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentChain?.color || 'bg-gray-400'} flex items-center justify-center overflow-hidden`}>
+                      <Image
+                        src={currentChain?.logo || '/chains/ethereum.png'}
+                        alt={currentChain?.name || 'Unknown Chain'}
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        {currentChain?.name || 'Unknown Chain'}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        Chain ID: {displayChainId}
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
-          </motion.div>
-        )}
+          ) : (
+            <>
+              <button
+                onClick={() => setShowSourceChainSelect(!showSourceChainSelect)}
+                className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:shadow-lg transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const currentChain = CHAIN_CONFIG.find(chain => chain.chainId === effectiveSourceChainId)
+                    return (
+                      <>
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${currentChain?.color || 'bg-gray-400'} flex items-center justify-center overflow-hidden`}>
+                          <Image
+                            src={currentChain?.logo || '/chains/ethereum.png'}
+                            alt={currentChain?.name || 'Unknown Chain'}
+                            width={40}
+                            height={40}
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100">
+                            {currentChain?.name || 'Unknown Chain'}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Chain ID: {effectiveSourceChainId}
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+                <FaChevronDown className={`text-gray-600 dark:text-gray-400 transition-transform ${showSourceChainSelect ? 'rotate-180' : ''}`} />
+              </button>
 
-        {/* Bridge Mode Toggle */}
-        <div className="flex justify-center mb-8">
-          <div className="glass rounded-xl p-1 inline-flex gap-1">
-            <button
-              onClick={() => setBridgeMode('bridge')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                bridgeMode === 'bridge'
-                  ? 'bg-gradient-to-r from-brown-500 to-purple-500 text-white'
-                  : 'text-brown-600 dark:text-brown-300'
-              }`}
-            >
-              <FaExchangeAlt className="inline mr-2" />
-              Bridge
-            </button>
-            <button
-              onClick={() => setBridgeMode('bridge-execute')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                bridgeMode === 'bridge-execute'
-                  ? 'bg-gradient-to-r from-brown-500 to-purple-500 text-white'
-                  : 'text-brown-600 dark:text-brown-300'
-              }`}
-            >
-              <HiLightningBolt className="inline mr-2" />
-              Bridge & Execute
-            </button>
-          </div>
+              <AnimatePresence>
+                {showSourceChainSelect && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full mt-2 w-full glass rounded-2xl p-2 z-20 border border-gray-200 dark:border-gray-700"
+                  >
+                    {CHAIN_CONFIG.map((chain) => (
+                      <button
+                        key={chain.id}
+                        onClick={() => {
+                          switchChain({ chainId: chain.chainId })
+                          setShowSourceChainSelect(false)
+                        }}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${chain.color} flex items-center justify-center overflow-hidden`}>
+                          <Image
+                            src={chain.logo}
+                            alt={chain.name}
+                            width={32}
+                            height={32}
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {chain.name}
+                        </span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Destination Chain */}
+      {/* Destination Chain */}
         <div className="mb-6">
-          <label className="text-sm font-medium text-brown-700 dark:text-brown-300 mb-2 block">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
             Destination Chain
           </label>
           <div className="relative">
-            <button
-              onClick={() => setShowChainSelect(!showChainSelect)}
-              className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:shadow-lg transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedChain.color} flex items-center justify-center overflow-hidden`}>
-                  <Image
-                    src={selectedChain.logo}
-                    alt={selectedChain.name}
-                    width={40}
-                    height={40}
-                    className="object-contain"
-                    unoptimized
-                  />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold text-brown-900 dark:text-brown-100">
-                    {selectedChain.name}
-                  </div>
-                  <div className="text-xs text-brown-600 dark:text-brown-400">
-                    Chain ID: {selectedChain.chainId}
-                  </div>
-                </div>
-              </div>
-              <FaChevronDown className={`text-brown-600 dark:text-brown-400 transition-transform ${showChainSelect ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {showChainSelect && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="absolute top-full mt-2 w-full glass rounded-2xl p-2 z-20 border border-brown-200 dark:border-brown-700"
-                >
-                  {CHAIN_CONFIG.map((chain) => (
-                    <button
-                      key={chain.id}
-                      onClick={() => {
-                        setSelectedChain(chain)
-                        setShowChainSelect(false)
-                      }}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-brown-100 dark:hover:bg-brown-800/50 transition-colors"
-                    >
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${chain.color} flex items-center justify-center overflow-hidden`}>
+            {hardcodedChains ? (
+              <div className="glass rounded-2xl p-4 flex items-center gap-3">
+                {(() => {
+                  const displayChainId = hardcodedChains.destinationChainId
+                  const displayChain = CHAIN_CONFIG.find(chain => chain.chainId === displayChainId) || selectedChain
+                  return (
+                    <>
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${displayChain.color} flex items-center justify-center overflow-hidden`}>
                         <Image
-                          src={chain.logo}
-                          alt={chain.name}
-                          width={32}
-                          height={32}
+                          src={displayChain.logo}
+                          alt={displayChain.name}
+                          width={40}
+                          height={40}
                           className="object-contain"
                           unoptimized
                         />
                       </div>
-                      <span className="font-medium text-brown-900 dark:text-brown-100">
-                        {chain.name}
-                      </span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                      <div className="text-left">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100">
+                          {displayChain.name}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          Chain ID: {displayChainId}
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowChainSelect(!showChainSelect)}
+                  className="w-full glass rounded-2xl p-4 flex items-center justify-between hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${selectedChain.color} flex items-center justify-center overflow-hidden`}>
+                      <Image
+                        src={selectedChain.logo}
+                        alt={selectedChain.name}
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedChain.name}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
+                        Chain ID: {selectedChain.chainId}
+                      </div>
+                    </div>
+                  </div>
+                  <FaChevronDown className={`text-gray-600 dark:text-gray-400 transition-transform ${showChainSelect ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {showChainSelect && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full mt-2 w-full glass rounded-2xl p-2 z-20 border border-gray-200 dark:border-gray-700"
+                    >
+                      {CHAIN_CONFIG.map((chain) => (
+                        <button
+                          key={chain.id}
+                          onClick={() => {
+                            setSelectedChain(chain)
+                            setShowChainSelect(false)
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${chain.color} flex items-center justify-center overflow-hidden`}>
+                            <Image
+                              src={chain.logo}
+                              alt={chain.name}
+                              width={32}
+                              height={32}
+                              className="object-contain"
+                              unoptimized
+                            />
+                          </div>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {chain.name}
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
         </div>
 
         {/* Token & Amount */}
         <div className="mb-6">
-          <label className="text-sm font-medium text-brown-700 dark:text-brown-300 mb-2 block">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
             Amount
           </label>
-          <div className="glass rounded-2xl p-4">
+          <div className={`glass rounded-2xl p-4 ${hardcodedChains ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowTokenSelect(!showTokenSelect)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl glass hover:bg-brown-100 dark:hover:bg-brown-800/50 transition-colors"
-              >
-                <div className="relative w-6 h-6">
-                  <Image
-                    src={selectedToken.logo}
-                    alt={selectedToken.symbol}
-                    fill
-                    className="object-contain"
-                  />
+              {hardcodedChains ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl glass">
+                  <div className="relative w-6 h-6">
+                    <Image
+                      src={selectedToken.logo}
+                      alt={selectedToken.symbol}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedToken.symbol}
+                  </span>
                 </div>
-                <span className="font-semibold text-brown-900 dark:text-brown-100">
-                  {selectedToken.symbol}
-                </span>
-                <FaChevronDown className="text-brown-600 dark:text-brown-400" />
-              </button>
-              
+              ) : (
+                <button
+                  onClick={() => setShowTokenSelect(!showTokenSelect)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl glass hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="relative w-6 h-6">
+                    <Image
+                      src={selectedToken.logo}
+                      alt={selectedToken.symbol}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedToken.symbol}
+                  </span>
+                  <FaChevronDown className="text-gray-600 dark:text-gray-400" />
+                </button>
+              )}
+
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => !hardcodedChains && setAmount(e.target.value)}
+                disabled={!!hardcodedChains}
                 placeholder="0.0"
-                className="flex-1 bg-transparent text-2xl font-bold text-brown-900 dark:text-brown-100 outline-none text-right"
+                className={`flex-1 bg-transparent text-2xl font-bold text-gray-900 dark:text-gray-100 outline-none text-right ${
+                  hardcodedChains ? 'cursor-not-allowed' : ''
+                }`}
               />
             </div>
-            
+
             {balance && (
               <div className="flex justify-between items-center mt-3 text-sm">
-                <span className="text-brown-600 dark:text-brown-400">
+                <span className="text-gray-600 dark:text-gray-400">
                   Balance: {parseFloat(balance.formatted).toFixed(4)} {selectedToken.symbol}
                 </span>
                 <button
-                  onClick={() => setAmount(balance.formatted)}
-                  className="text-purple-500 hover:text-purple-600 font-medium"
+                  onClick={() => !hardcodedChains && setAmount(balance.formatted)}
+                  disabled={!!hardcodedChains}
+                  className={`font-medium ${
+                    hardcodedChains ? 'text-gray-400 cursor-not-allowed' : 'text-purple-500 hover:text-purple-600'
+                  }`}
                 >
                   MAX
                 </button>
@@ -401,12 +517,12 @@ export default function NexusBridgeWidget() {
           </div>
 
           <AnimatePresence>
-            {showTokenSelect && (
+            {showTokenSelect && !hardcodedChains && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute mt-2 glass rounded-2xl p-2 z-20 border border-brown-200 dark:border-brown-700 w-64"
+                className="absolute mt-2 glass rounded-2xl p-2 z-20 border border-gray-200 dark:border-gray-700 w-64"
               >
                 {TOKENS.map((token) => (
                   <button
@@ -415,7 +531,7 @@ export default function NexusBridgeWidget() {
                       setSelectedToken(token)
                       setShowTokenSelect(false)
                     }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-brown-100 dark:hover:bg-brown-800/50 transition-colors"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <div className="relative w-8 h-8">
                       <Image
@@ -426,10 +542,10 @@ export default function NexusBridgeWidget() {
                       />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-brown-900 dark:text-brown-100">
+                      <div className="font-medium text-gray-900 dark:text-gray-100">
                         {token.symbol}
                       </div>
-                      <div className="text-xs text-brown-600 dark:text-brown-400">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
                         {token.name}
                       </div>
                     </div>
@@ -440,51 +556,6 @@ export default function NexusBridgeWidget() {
           </AnimatePresence>
         </div>
 
-        {/* Bridge & Execute Options */}
-        {bridgeMode === 'bridge-execute' && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6"
-          >
-            <label className="text-sm font-medium text-brown-700 dark:text-brown-300 mb-2 block">
-              Execute Action
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => setExecuteAction('swap')}
-                className={`p-3 rounded-xl font-medium transition-all ${
-                  executeAction === 'swap'
-                    ? 'glass bg-gradient-to-r from-brown-500/20 to-purple-500/20 border-purple-500'
-                    : 'glass hover:bg-brown-100 dark:hover:bg-brown-800/50'
-                }`}
-              >
-                Swap
-              </button>
-              <button
-                onClick={() => setExecuteAction('deposit')}
-                className={`p-3 rounded-xl font-medium transition-all ${
-                  executeAction === 'deposit'
-                    ? 'glass bg-gradient-to-r from-brown-500/20 to-purple-500/20 border-purple-500'
-                    : 'glass hover:bg-brown-100 dark:hover:bg-brown-800/50'
-                }`}
-              >
-                Deposit
-              </button>
-              <button
-                onClick={() => setExecuteAction('stake')}
-                className={`p-3 rounded-xl font-medium transition-all ${
-                  executeAction === 'stake'
-                    ? 'glass bg-gradient-to-r from-brown-500/20 to-purple-500/20 border-purple-500'
-                    : 'glass hover:bg-brown-100 dark:hover:bg-brown-800/50'
-                }`}
-              >
-                Stake
-              </button>
-            </div>
-          </motion.div>
-        )}
 
         {/* Estimated Output */}
         {amount && parseFloat(amount) > 0 && (
@@ -494,7 +565,7 @@ export default function NexusBridgeWidget() {
             className="glass rounded-2xl p-4 mb-6 border border-purple-200 dark:border-purple-800/50"
           >
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-brown-700 dark:text-brown-300">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Bridge Details
               </span>
               <div className="flex items-center gap-1">
@@ -507,25 +578,25 @@ export default function NexusBridgeWidget() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-brown-600 dark:text-brown-400">Estimated Time</span>
-                <span className="text-brown-900 dark:text-brown-100 font-medium">
+                <span className="text-gray-600 dark:text-gray-400">Estimated Time</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
                   ~3-5 min
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-brown-600 dark:text-brown-400">Bridge Fee</span>
-                <span className="text-brown-900 dark:text-brown-100 font-medium">
+                <span className="text-gray-600 dark:text-gray-400">Bridge Fee</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
                   0.3%
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-brown-600 dark:text-brown-400">Slippage</span>
-                <span className="text-brown-900 dark:text-brown-100 font-medium">
+                <span className="text-gray-600 dark:text-gray-400">Slippage</span>
+                <span className="text-gray-900 dark:text-gray-100 font-medium">
                   {customSlippage || slippage}%
                 </span>
               </div>
               <div className="border-t border-brown-200 dark:border-brown-700 pt-2 flex justify-between text-sm font-semibold">
-                <span className="text-brown-700 dark:text-brown-300">You'll Receive</span>
+                <span className="text-gray-700 dark:text-gray-300">You'll Receive</span>
                 <span className="text-green-600 dark:text-green-400">
                   ~{estimatedOutput} {selectedToken.symbol}
                 </span>
@@ -537,16 +608,21 @@ export default function NexusBridgeWidget() {
         {/* Bridge Button */}
         <button
           onClick={handleBridge}
-          disabled={isLoading || (isConnected && (!amount || parseFloat(amount) <= 0 || !isInitialized))}
+          disabled={isLoading || !!hardcodedChains || (isConnected && (!amount || parseFloat(amount) <= 0 || !isInitialized))}
           className={`
-            w-full py-4 rounded-2xl font-bold text-white transition-all duration-300
-            ${isLoading || (isConnected && (!amount || parseFloat(amount) <= 0 || !isInitialized))
+            w-full py-4 rounded-2xl font-bold text-white transition-all duration-300 border border-brown-600
+            ${isLoading || hardcodedChains || (isConnected && (!amount || parseFloat(amount) <= 0 || !isInitialized))
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-brown-500 to-purple-500 hover:from-brown-600 hover:to-purple-600 shadow-xl hover:shadow-2xl transform hover:-translate-y-1'
             }
           `}
         >
-          {isLoading ? (
+          {hardcodedChains ? (
+            <span className="flex items-center justify-center gap-2">
+              <FaClock className="animate-spin" />
+              Bridge in Progress...
+            </span>
+          ) : isLoading ? (
             <span className="flex items-center justify-center gap-2">
               <FaClock className="animate-spin" />
               Processing...
@@ -554,13 +630,13 @@ export default function NexusBridgeWidget() {
           ) : !isConnected ? (
             'Connect Wallet'
           ) : !isInitialized ? (
-            'Initializing SDK...'
+            'Please Wait...'
           ) : !amount || parseFloat(amount) <= 0 ? (
             'Enter Amount'
           ) : (
             <span className="flex items-center justify-center gap-2">
-              {bridgeMode === 'bridge' ? <FaExchangeAlt /> : <HiLightningBolt />}
-              {bridgeMode === 'bridge' ? 'Bridge' : 'Bridge & Execute'}
+              <FaExchangeAlt />
+              Bridge
             </span>
           )}
         </button>
@@ -571,8 +647,8 @@ export default function NexusBridgeWidget() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`mt-4 p-4 rounded-xl ${
-              txStatus === 'success' 
-                ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700' 
+              txStatus === 'success'
+                ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
                 : 'bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700'
             }`}
           >
@@ -587,17 +663,27 @@ export default function NexusBridgeWidget() {
                   Transaction {txStatus === 'success' ? 'Submitted' : 'Failed'}
                 </span>
               </div>
-              {txHash && (
-                <a
-                  href={txHash}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline"
-                >
-                  View
-                  <HiExternalLink />
-                </a>
-              )}
+              <div className="flex items-center gap-2">
+                {txStatus === 'error' && (
+                  <button
+                    onClick={handleBridge}
+                    className="px-3 py-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
+                {txHash && (
+                  <a
+                    href={txHash}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                  >
+                    View
+                    <HiExternalLink />
+                  </a>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -629,7 +715,7 @@ export default function NexusBridgeWidget() {
             >
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-brown-700 dark:text-brown-300">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Slippage Tolerance
                   </label>
                   <div className="flex gap-2 mt-2">
@@ -643,7 +729,7 @@ export default function NexusBridgeWidget() {
                         className={`px-3 py-1 rounded-lg glass text-sm transition-all ${
                           slippage === slippageOption && !customSlippage
                             ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700'
-                            : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                         }`}
                       >
                         {slippageOption}%
@@ -664,13 +750,13 @@ export default function NexusBridgeWidget() {
                       }`}
                     />
                   </div>
-                  <p className="text-xs text-brown-600 dark:text-brown-400 mt-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     Current: {customSlippage || slippage}%
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-brown-700 dark:text-brown-300">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Gas Price
                   </label>
                   <div className="flex gap-2 mt-2">
@@ -679,7 +765,7 @@ export default function NexusBridgeWidget() {
                       className={`flex-1 px-3 py-2 rounded-lg glass text-sm transition-all ${
                         gasSpeed === 'slow'
                           ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700'
-                          : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       <FaGasPump className="inline mr-1" />
@@ -690,7 +776,7 @@ export default function NexusBridgeWidget() {
                       className={`flex-1 px-3 py-2 rounded-lg glass text-sm transition-all ${
                         gasSpeed === 'standard'
                           ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700'
-                          : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       <FaRocket className="inline mr-1" />
@@ -701,7 +787,7 @@ export default function NexusBridgeWidget() {
                       className={`flex-1 px-3 py-2 rounded-lg glass text-sm transition-all ${
                         gasSpeed === 'fast'
                           ? 'bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-700'
-                          : 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800/50'
                       }`}
                     >
                       <HiLightningBolt className="inline mr-1" />

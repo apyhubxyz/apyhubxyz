@@ -5,7 +5,6 @@ import { HiMenu, HiX } from 'react-icons/hi'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import Link from 'next/link'
 import Image from 'next/image'
-import ThemeToggle from './ThemeToggle'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -24,7 +23,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo - Clickable to home */}
           <Link href="/" className="flex items-center space-x-2 cursor-pointer">
-            <div className="bg-gradient-to-br from-brown-500 to-purple-500 p-1 rounded-xl shadow-sm">
+            <div className="p-1 rounded-xl shadow-sm border border-purple-600">
               <Image src="/logo.png" alt="Apyhub Logo" width={33} height={33} className="rounded-lg" />
             </div>
             <span className="text-xl font-bold gradient-text">Apyhub</span>
@@ -41,9 +40,6 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* Connect Wallet */}
             <ConnectButton.Custom>
@@ -75,7 +71,7 @@ const Header = () => {
                           <button
                             onClick={openConnectModal}
                             type="button"
-                            className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-6 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm"
+                            className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-6 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm border border-brown-600"
                           >
                             Connect Wallet
                           </button>
@@ -144,9 +140,6 @@ const Header = () => {
 
           {/* Mobile Navigation Controls */}
           <div className="flex items-center gap-2 md:hidden">
-            {/* Theme Toggle - Always visible on mobile */}
-            <ThemeToggle />
-            
             {/* Connect Wallet - Always visible on mobile */}
             <div>
               <ConnectButton.Custom>
@@ -178,7 +171,7 @@ const Header = () => {
                             <button
                               onClick={openConnectModal}
                               type="button"
-                              className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-5 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm"
+                              className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-5 py-2.5 rounded-full font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm border border-brown-600"
                             >
                               Connect Wallet
                             </button>

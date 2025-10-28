@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import apiClient from '@/lib/api'
 import toast from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -218,7 +219,33 @@ export default function AIChatbot() {
                       <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">AI</span>
                     </div>
                   )}
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }) => <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-4 mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-semibold text-purple-600 dark:text-purple-400 mt-4 mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-semibold text-purple-600 dark:text-purple-400 mt-4 mb-2">{children}</h3>,
+                        p: ({ children }) => <p className="mb-2">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                        ul: ({ children }) => <ul className="ml-4 list-disc">{children}</ul>,
+                        ol: ({ children }) => <ol className="ml-4 list-decimal">{children}</ol>,
+                        li: ({ children }) => <li>{children}</li>,
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium underline">
+                            {children}
+                          </a>
+                        ),
+                        table: ({ children }) => <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">{children}</table>,
+                        thead: ({ children }) => <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>,
+                        tbody: ({ children }) => <tbody>{children}</tbody>,
+                        tr: ({ children }) => <tr className="border-b border-gray-300 dark:border-gray-600">{children}</tr>,
+                        th: ({ children }) => <th className="px-4 py-2 text-left font-semibold">{children}</th>,
+                        td: ({ children }) => <td className="px-4 py-2">{children}</td>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ))}

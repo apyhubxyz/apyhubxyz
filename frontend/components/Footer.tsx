@@ -75,7 +75,7 @@ const Footer = () => {
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-black/20 border border-brown-200 dark:border-brown-700 text-brown-800 dark:text-brown-100 placeholder-brown-400 dark:placeholder-brown-500 focus:outline-none focus:border-purple-500"
               />
-              <button className="px-6 py-3 bg-gradient-to-r from-brown-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all whitespace-nowrap">
+              <button className="px-6 py-3 bg-gradient-to-r from-brown-500 to-purple-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all whitespace-nowrap border border-brown-600">
                 Subscribe
               </button>
             </div>

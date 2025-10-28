@@ -3,7 +3,7 @@
 import { use } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, ShieldCheckIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import { ArrowTrendingUpIcon } from '@heroicons/react/24/solid'
 import apiClient from '@/lib/api'
 import APYChart from '@/components/APYChart'
@@ -11,8 +11,8 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import toast from 'react-hot-toast'
 
-export default function PoolDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function PoolDetailPage({ params }: { params: { id: string } }) {
+   const { id } = params
 
   const { data: pool, isLoading, error } = useQuery({
     queryKey: ['pool', id],
@@ -120,6 +120,18 @@ export default function PoolDetailPage({ params }: { params: Promise<{ id: strin
                 <span className="text-5xl font-bold">{pool.totalAPY.toFixed(2)}%</span>
               </div>
               <span className="text-purple-200">Total APY</span>
+              {pool.protocol?.website && (
+                <a
+                  href={pool.protocol.website.startsWith('http') ? pool.protocol.website : `https://${pool.protocol.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <GlobeAltIcon className="w-4 h-4" />
+                  Visit Protocol
+                  <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -263,12 +275,12 @@ export default function PoolDetailPage({ params }: { params: Promise<{ id: strin
                   <dt className="text-gray-600 dark:text-gray-400">Website</dt>
                   <dd>
                     <a
-                      href={pool.protocol.website}
+                      href={pool.protocol.website.startsWith('http') ? pool.protocol.website : `https://${pool.protocol.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                      className="flex items-center gap-1 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium"
                     >
-                      Visit
+                      Visit Protocol Site
                       <ArrowTopRightOnSquareIcon className="w-4 h-4" />
                     </a>
                   </dd>

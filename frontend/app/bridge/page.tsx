@@ -1,32 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import NexusBridgeWidget from '../../components/NexusBridgeWidget'
-import UnifiedBalance from '../../components/UnifiedBalance'
-import BridgeHistory from '../../components/BridgeHistory'
-import { useAccount } from 'wagmi'
-import { FaExchangeAlt, FaHistory, FaWallet } from 'react-icons/fa'
 import { HiSparkles } from 'react-icons/hi'
 
 export default function BridgePage() {
   const [mounted, setMounted] = useState(false)
-  const [activeTab, setActiveTab] = useState<'bridge' | 'history' | 'balance'>('bridge')
-  const { address, isConnected } = useAccount()
-
   useEffect(() => {
     setMounted(true)
   }, [])
 
   if (!mounted) return null
-
-  const tabs = [
-    { id: 'bridge', label: 'Bridge', icon: FaExchangeAlt },
-    { id: 'balance', label: 'Unified Balance', icon: FaWallet },
-    { id: 'history', label: 'History', icon: FaHistory },
-  ]
 
   return (
     <main className="relative min-h-screen">
@@ -62,74 +49,15 @@ export default function BridgePage() {
       {/* Main Bridge Interface */}
       <section className="relative pb-20 px-4">
         <div className="container mx-auto max-w-6xl">
-          {/* Tab Navigation */}
+
+          {/* Content Area */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex justify-center mb-8"
+            transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <div className="glass-dark rounded-2xl p-2 inline-flex gap-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`
-                      flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300
-                      ${activeTab === tab.id
-                        ? 'bg-gradient-to-r from-brown-500 to-purple-500 text-white shadow-lg scale-105'
-                        : 'text-brown-600 dark:text-brown-300 hover:bg-brown-100 dark:hover:bg-brown-800/50'
-                      }
-                    `}
-                  >
-                    <Icon className="text-lg" />
-                    <span>{tab.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <NexusBridgeWidget />
           </motion.div>
-
-          {/* Content Area */}
-          <AnimatePresence mode="wait">
-            {activeTab === 'bridge' && (
-              <motion.div
-                key="bridge"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <NexusBridgeWidget />
-              </motion.div>
-            )}
-
-            {activeTab === 'balance' && (
-              <motion.div
-                key="balance"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <UnifiedBalance />
-              </motion.div>
-            )}
-
-            {activeTab === 'history' && (
-              <motion.div
-                key="history"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <BridgeHistory />
-              </motion.div>
-            )}
-          </AnimatePresence>
 
         </div>
       </section>
