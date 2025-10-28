@@ -128,7 +128,7 @@ const APYShowcase = () => {
                 transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.3) }}
                 viewport={{ once: true }}
               >
-                <Link href={`/pool/${pool.id}`}>
+                <a href={pool.protocol?.website ? pool.protocol.website : `/pool/${pool.id}`} target={pool.protocol?.website ? '_blank' : '_self'} rel={pool.protocol?.website ? 'noopener,noreferrer' : undefined} className="block">
                   <div className="glass rounded-2xl p-5 border border-brown-200/20 dark:border-brown-800/20 hover:border-purple-400/30 dark:hover:border-purple-500/30 transition-all duration-300 cursor-pointer h-full">
                     {/* Protocol Header */}
                     <div className="flex items-center justify-between mb-4">
@@ -243,7 +243,7 @@ const APYShowcase = () => {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </motion.div>
             ))
           ) : !isLoading && !error ? (

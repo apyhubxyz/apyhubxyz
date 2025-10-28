@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@avail-project/nexus-core": "^0.0.1",
+    "@avail-project/nexus-widgets": "^0.0.6",
     "@heroicons/react": "^2.1.5",
     "@rainbow-me/rainbowkit": "^2.2.9",
     "@reown/appkit": "^1.8.11",
@@ -24,6 +25,7 @@
     "react-dom": "^18",
     "react-hot-toast": "^2.6.0",
     "react-icons": "^5.3.0",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.3.0",
     "viem": "^2.38.4",
     "wagmi": "^2.18.2"

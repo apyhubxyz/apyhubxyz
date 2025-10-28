@@ -6,62 +6,134 @@ import { createSilentRedis } from '../utils/redis';
 const redis = createSilentRedis();
 
 export interface DefiLlamaPool {
-  chain: string;
-  project: string;
-  symbol: string;
-  tvlUsd: number;
-  apy: number;
-  apyBase: number;
-  apyReward: number;
-  pool: string;  // Pool ID
-  stablecoin: boolean;
-  ilRisk: string;
-  exposure: string;
-  utilization?: number;
-  predictions?: {
-    predictedClass: string;
-    predictedProbability: number;
-    binnedConfidence: number;
-  };
-}
+   chain: string;
+   project: string;
+   symbol: string;
+   tvlUsd: number;
+   apy: number;
+   apyBase: number;
+   apyReward: number;
+   pool: string;  // Pool ID
+   stablecoin: boolean;
+   ilRisk: string;
+   exposure: string;
+   utilization?: number;
+   predictions?: {
+     predictedClass: string;
+     predictedProbability: number;
+     binnedConfidence: number;
+   };
+ }
+
+export interface DefiLlamaProtocol {
+   id: string;
+   name: string;
+   url: string;
+   description: string;
+   logo: string;
+   category: string;
+   chains: string[];
+   twitter: string;
+   governanceID: string[];
+   github: string[];
+   treasury: string;
+   audits: string;
+   audit_links: string[];
+   cmcId: string;
+   tvl: number;
+ }
 
 export class DefiLlamaAggregator {
-  private readonly API_BASE = 'https://yields.llama.fi';
-  private readonly CACHE_TTL = 1800; // 30 minutes
-  private memoryCache: Map<string, { data: any; expiry: number }> = new Map();
+   private readonly API_BASE = 'https://yields.llama.fi';
+   private readonly PROTOCOLS_API = 'https://api.llama.fi';
+   private readonly CACHE_TTL = 1800; // 30 minutes
+   private memoryCache: Map<string, { data: any; expiry: number }> = new Map();
   
   /**
    * Fetch ALL pools from DefiLlama (1000+ protocols)
    */
   async fetchAllPools(): Promise<DefiLlamaPool[]> {
     const cacheKey = 'defillama-all-pools';
-    
+
     // Check cache
     const cached = await this.getFromCache(cacheKey);
     if (cached) {
       console.log(`📦 Returning ${cached.length} cached DeFiLlama pools`);
       return cached;
     }
-    
+
     try {
       console.log('🌐 Fetching fresh data from DefiLlama (1000+ protocols)...');
-      
+
       const response = await axios.get(`${this.API_BASE}/pools`, {
         timeout: 30000,
       });
-      
+
       const pools: DefiLlamaPool[] = response.data.data || [];
-      
+
       console.log(`✅ Fetched ${pools.length} pools from DefiLlama`);
-      
+
       // Cache the results
       await this.saveToCache(cacheKey, pools);
-      
+
       return pools;
     } catch (error: any) {
       console.error('DefiLlama fetch error:', error.message);
       return [];
     }
+  }
+
+  /**
+   * Fetch protocol information including websites
+   */
+  async fetchProtocolInfo(protocolName: string): Promise<DefiLlamaProtocol | null> {
+    const cacheKey = `defillama-protocol-${protocolName.toLowerCase()}`;
+
+    // Check cache
+    const cached = await this.getFromCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      // Try different protocol name formats
+      const protocolSlugs = [
+        protocolName.toLowerCase().replace(/\s+/g, '-'),
+        protocolName.toLowerCase().replace(/\s+/g, ''),
+        protocolName.toLowerCase(),
+      ];
+
+      for (const slug of protocolSlugs) {
+        try {
+          const response = await axios.get(`${this.PROTOCOLS_API}/protocol/${slug}`, {
+            timeout: 5000, // Reduced timeout
+          });
+
+          const protocol: DefiLlamaProtocol = response.data;
+
+          // Cache the result
+          await this.saveToCache(cacheKey, protocol);
+
+          return protocol;
+        } catch (error) {
+          // Continue to next slug
+          continue;
+        }
+      }
+
+      return null;
+    } catch (error: any) {
+      console.error(`Failed to fetch protocol info for ${protocolName}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Get protocol website URL
+   */
+  async getProtocolWebsite(protocolName: string): Promise<string | undefined> {
+    const protocol = await this.fetchProtocolInfo(protocolName);
+    return protocol?.url;
   }
   
   /**

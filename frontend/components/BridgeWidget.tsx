@@ -249,7 +249,7 @@ export default function BridgeWidget() {
               }`}
             >
               <HiLightningBolt className="inline mr-2" />
-              Bridge & Execute
+             
             </button>
           </div>
         </div>

@@ -42,7 +42,7 @@ const Hero = () => {
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Link
                 href="/pools"
-                className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-8 py-4 rounded-full flex items-center justify-center space-x-2 font-semibold shadow-xl hover:shadow-2xl transition-shadow"
+                className="btn-hover bg-gradient-to-r from-brown-500 to-purple-500 text-white px-8 py-4 rounded-full flex items-center justify-center space-x-2 font-semibold shadow-xl hover:shadow-2xl transition-shadow border border-purple-600"
                 aria-label="Navigate to pools page to start earning"
               >
                 <span>Start Earning Now</span>
@@ -108,11 +108,11 @@ const Hero = () => {
                 <div className="glass p-6 rounded-2xl shadow-xl">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-white-400 to-white-600 rounded-full flex items-center justify-center">
                         <FaShieldAlt className="text-white" />
                       </div>
                       <div>
-                        <div className="text-sm text-brown-600 dark:text-brown-300">Compound</div>
+                        <div className="text-sm text-brown-600 white:text-brown-300">Compound</div>
                         <div className="font-semibold text-brown-800 dark:text-brown-100">ETH Vault</div>
                       </div>
                     </div>

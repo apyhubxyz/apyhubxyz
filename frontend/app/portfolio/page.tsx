@@ -125,7 +125,7 @@ export default function PortfolioPage() {
 
         {/* Page Header with animated gradient */}
         <div className="mb-10">
-          <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-brown-800 via-purple-600 to-brown-800 dark:from-brown-200 dark:via-purple-400 dark:to-brown-200 bg-clip-text text-transparent mb-4 animate-[shine_3s_linear_infinite] bg-[length:200%_auto]">
+          <h1 className="text-4xl lg:text-5xl font-bold text-purple-600 dark:text-purple-400 mb-4">
             Your DeFi Journey
           </h1>
           <p className="text-lg text-brown-700 dark:text-brown-300 max-w-3xl leading-relaxed">
@@ -174,7 +174,7 @@ export default function PortfolioPage() {
                     />
                     <button
                       onClick={handleAddressSearch}
-                      className="px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                      className="px-6 py-3 bg-gradient-to-r from-brown-600 to-purple-600 dark:from-brown-500 dark:to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2 border border-brown-600"
                     >
                       <MagnifyingGlassIcon className="w-5 h-5" />
                       Search
