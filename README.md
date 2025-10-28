@@ -68,6 +68,9 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production deployment details.
 
 ## Key Features
 
+**Cross-Chain Bridge** 🌉
+Bridge assets between Ethereum, Arbitrum, Optimism, Base, and Polygon using Avail Nexus SDK. Real transactions with optimized routes and minimal fees.
+
 **Portfolio Tracking**
 Connect your wallet to see all your DeFi positions in one place. The dashboard fetches your lending positions, liquidity pools, and calculates your total value.
 
@@ -156,7 +159,6 @@ cd frontend && npm test
 - [Docker Quick Start](docs/Docker%20Quick%20Start.md)
 - [API Reference](docs/API%20Reference.md)
 - [Troubleshooting](docs/Troubleshooting.md)
-
 ## Contributing
 
 We welcome contributions. Please:

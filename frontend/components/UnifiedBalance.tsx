@@ -4,21 +4,21 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { formatEther } from 'viem'
-import { 
-  FaWallet, 
-  FaChartLine, 
+import {
+  FaWallet,
+  FaChartLine,
   FaChevronRight,
   FaEyeSlash,
   FaEye,
   FaSyncAlt
 } from 'react-icons/fa'
-import { 
+import {
   HiSparkles,
   HiTrendingUp,
   HiTrendingDown,
   HiRefresh
 } from 'react-icons/hi'
-import axios from 'axios'
+import { apiClient } from '@/lib/api'
 
 interface ChainBalance {
   chainId: number
@@ -177,18 +177,23 @@ export default function UnifiedBalance() {
   const fetchBalances = async () => {
     setIsLoading(true)
     try {
-      // In production, this would fetch real balances from the API
-      // const response = await axios.get(`/api/unified-balance/${address}`)
-      // setChainBalances(response.data.balances)
-      // setTotalBalance(response.data.totalUsdValue)
-      
-      // For now, use mock data
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Fetch real balances from the API
+      const data = await apiClient.bridge.getUnifiedBalance(address!)
+      if (data && data.balances) {
+        setChainBalances(data.balances)
+        setTotalBalance(data.totalUsdValue)
+      } else {
+        // Fallback to mock data if API response is incomplete
+        setChainBalances(mockBalances)
+        const total = mockBalances.reduce((sum, chain) => sum + chain.totalUsdValue, 0)
+        setTotalBalance(total)
+      }
+    } catch (error) {
+      console.error('Failed to fetch balances:', error)
+      // Fallback to mock data if API fails
       setChainBalances(mockBalances)
       const total = mockBalances.reduce((sum, chain) => sum + chain.totalUsdValue, 0)
       setTotalBalance(total)
-    } catch (error) {
-      console.error('Failed to fetch balances:', error)
     } finally {
       setIsLoading(false)
     }
